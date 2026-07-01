@@ -102,17 +102,14 @@ local function rollWeather()
 	end
 end
 
--- TODO: тестові значення по 10с для перевірки таймерів — повернути на
--- 10/20/15/15 хвилин перед релізом
 local timeOfDaySchedule = {
-	{ phase = "morning", duration = 10 },
-	{ phase = "day",     duration = 10 },
-	{ phase = "evening", duration = 10 },
-	{ phase = "night",   duration = 10 },
+	{ phase = "morning", duration = 10 * 60 },
+	{ phase = "day",     duration = 20 * 60 },
+	{ phase = "evening", duration = 15 * 60 },
+	{ phase = "night",   duration = 15 * 60 },
 }
 
--- TODO: тестове значення 10с — повернути на 10*60 перед релізом
-local WEATHER_CHANGE_INTERVAL = 10
+local WEATHER_CHANGE_INTERVAL = 10 * 60
 
 -- Weather cycle
 task.spawn(function()
