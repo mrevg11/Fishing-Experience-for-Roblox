@@ -231,6 +231,18 @@ gridPadding.PaddingLeft = UDim.new(0, 28)
 gridPadding.PaddingRight = UDim.new(0, 27)
 gridPadding.Parent = itemGrid
 
+-- Окремий напис "порожньо" — НЕ дочірній itemGrid, бо UIGridLayout
+-- примусово перехоплює Position/Size всіх своїх дочірніх елементів
+local emptyLabel = newLabel(
+	backpackWindow,
+	"Nothing here yet! 🎣",
+	UDim2.new(1, -40, 0, 50),
+	UDim2.new(0, 20, 0, 140),
+	Color3.fromRGB(180, 180, 180), 32
+)
+emptyLabel.TextXAlignment = Enum.TextXAlignment.Center
+emptyLabel.Visible = false
+
 -- ==============================
 -- INVENTORY RENDERING
 -- ==============================
@@ -267,14 +279,8 @@ local function renderInventory(tab)
 		end
 	end
 
+	emptyLabel.Visible = #items == 0
 	if #items == 0 then
-		newLabel(
-			itemGrid,
-			"Nothing here yet! 🎣",
-			UDim2.new(1, 0, 0, 50),
-			UDim2.new(0, 0, 0, 10),
-			Color3.fromRGB(180, 180, 180), 32
-		)
 		return
 	end
 
