@@ -62,6 +62,10 @@ local FishData = {
 local currentWeather = "clear"
 local currentTimeOfDay = "morning"
 
+-- Момент (os.clock()), коли відбудеться наступна зміна погоди/фази доби
+local weatherNextChangeAt = 0
+local phaseNextChangeAt = 0
+
 local weatherChances = {
 	{ weather = "clear",  chance = 35 },
 	{ weather = "cloudy", chance = 30 },
@@ -70,8 +74,18 @@ local weatherChances = {
 	{ weather = "storm",  chance = 5  },
 }
 
-local function broadcastWeather()
-	UpdateWeather:FireAllClients(currentWeather, currentTimeOfDay)
+local function secondsLeft(nextChangeAt)
+	return math.max(0, math.floor(nextChangeAt - os.clock()))
+end
+
+local function broadcastWeather(targetPlayer)
+	local weatherSecondsLeft = secondsLeft(weatherNextChangeAt)
+	local phaseSecondsLeft = secondsLeft(phaseNextChangeAt)
+	if targetPlayer then
+		UpdateWeather:FireClient(targetPlayer, currentWeather, currentTimeOfDay, weatherSecondsLeft, phaseSecondsLeft)
+	else
+		UpdateWeather:FireAllClients(currentWeather, currentTimeOfDay, weatherSecondsLeft, phaseSecondsLeft)
+	end
 end
 
 local function rollWeather()
@@ -100,6 +114,7 @@ local WEATHER_CHANGE_INTERVAL = 10 * 60
 -- Weather cycle
 task.spawn(function()
 	while true do
+		weatherNextChangeAt = os.clock() + WEATHER_CHANGE_INTERVAL
 		task.wait(WEATHER_CHANGE_INTERVAL)
 		rollWeather()
 	end
@@ -110,6 +125,7 @@ task.spawn(function()
 	while true do
 		for _, phase in ipairs(timeOfDaySchedule) do
 			currentTimeOfDay = phase.phase
+			phaseNextChangeAt = os.clock() + phase.duration
 			print("[FishingSystem] Час доби: " .. currentTimeOfDay)
 			broadcastWeather()
 			task.wait(phase.duration)
@@ -117,9 +133,9 @@ task.spawn(function()
 	end
 end)
 
--- Надсилаємо новому гравцю поточний стан погоди/часу доби
+-- Надсилаємо новому гравцю поточний стан погоди/часу доби + таймери
 Players.PlayerAdded:Connect(function(player)
-	UpdateWeather:FireClient(player, currentWeather, currentTimeOfDay)
+	broadcastWeather(player)
 end)
 
 -- ==============================

@@ -92,17 +92,32 @@ local coinsLabel = newLabel(
 
 local weatherFrame = newFrame(
 	screenGui,
-	UDim2.new(0, 280, 0, 55),
-	UDim2.new(0.5, -140, 0, -45),
+	UDim2.new(0, 480, 0, 55),
+	UDim2.new(0.5, -240, 0, -45),
 	Color3.fromRGB(20, 20, 20), 0.3, 5
 )
 addRound(weatherFrame, 14)
 addBorder(weatherFrame, Color3.fromRGB(100, 200, 255), 3)
 
+-- Ліва половина — фаза доби, права половина — погода, розділені по центру
+local timeLabel = newLabel(
+	weatherFrame, "🌅 Morning",
+	UDim2.new(0.5, -10, 1, 0),
+	UDim2.new(0, 10, 0, 0),
+	Color3.fromRGB(200, 240, 255), 6
+)
+
+local divider = newFrame(
+	weatherFrame,
+	UDim2.new(0, 2, 1, -16),
+	UDim2.new(0.5, -1, 0, 8),
+	Color3.fromRGB(255, 255, 255), 0.5, 6
+)
+
 local weatherLabel = newLabel(
-	weatherFrame, "🌅 Morning | ☀️ Clear",
-	UDim2.new(1, 0, 1, 0),
-	UDim2.new(0, 0, 0, 0),
+	weatherFrame, "☀️ Clear",
+	UDim2.new(0.5, -10, 1, 0),
+	UDim2.new(0.5, 0, 0, 0),
 	Color3.fromRGB(200, 240, 255), 6
 )
 
@@ -122,6 +137,31 @@ local weatherDisplay = {
 }
 
 -- ==============================
+-- COUNTDOWN STATE
+-- ==============================
+
+local currentTimeOfDay = "morning"
+local currentWeather = "clear"
+local phaseSecondsLeft = 0
+local weatherSecondsLeft = 0
+
+local function formatCountdown(seconds)
+	seconds = math.max(0, seconds)
+	local m = math.floor(seconds / 60)
+	local s = seconds % 60
+	return string.format("%d:%02d", m, s)
+end
+
+local function refreshLabels()
+	local time = timeOfDayDisplay[currentTimeOfDay] or timeOfDayDisplay.morning
+	local weatherInfo = weatherDisplay[currentWeather] or weatherDisplay.clear
+	timeLabel.Text = time.icon .. " " .. time.text .. " ⏱ " .. formatCountdown(phaseSecondsLeft)
+	weatherLabel.Text = weatherInfo.icon .. " " .. weatherInfo.text .. " ⏱ " .. formatCountdown(weatherSecondsLeft)
+end
+
+refreshLabels()
+
+-- ==============================
 -- SERVER EVENTS
 -- ==============================
 
@@ -129,10 +169,22 @@ UpdateCoins.OnClientEvent:Connect(function(coins)
 	coinsLabel.Text = "$ " .. tostring(coins)
 end)
 
-UpdateWeather.OnClientEvent:Connect(function(weather, timeOfDay)
-	local time = timeOfDayDisplay[timeOfDay] or timeOfDayDisplay.morning
-	local weatherInfo = weatherDisplay[weather] or weatherDisplay.clear
-	weatherLabel.Text = time.icon .. " " .. time.text .. " | " .. weatherInfo.icon .. " " .. weatherInfo.text
+UpdateWeather.OnClientEvent:Connect(function(weather, timeOfDay, newWeatherSecondsLeft, newPhaseSecondsLeft)
+	currentWeather = weather
+	currentTimeOfDay = timeOfDay
+	weatherSecondsLeft = newWeatherSecondsLeft
+	phaseSecondsLeft = newPhaseSecondsLeft
+	refreshLabels()
+end)
+
+-- Локальний відлік між серверними оновленнями, щоб таймер не стояв на місці
+task.spawn(function()
+	while true do
+		task.wait(1)
+		weatherSecondsLeft = math.max(0, weatherSecondsLeft - 1)
+		phaseSecondsLeft = math.max(0, phaseSecondsLeft - 1)
+		refreshLabels()
+	end
 end)
 
 print("[HudController] Initialized successfully!")
