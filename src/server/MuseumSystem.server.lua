@@ -137,16 +137,16 @@ local function buildMuseumPayload(data)
 end
 
 -- ==============================
--- OFFLINE PASSIVE INCOME (F3)
+-- PASSIVE INCOME (F3: офлайн при вході + онлайн-тікер, поки грає)
 -- ==============================
 
-local function payOfflineIncome(player, data)
+local ONLINE_TICK_INTERVAL = 60 -- секунд
+
+-- Рахує дохід музею за minutesElapsed і нараховує монети (без сповіщення)
+local function payIncomeForMinutes(player, data, minutesElapsed)
 	ensureMuseumShape(data)
 	local museumFish = data.museum.fish
-	if #museumFish == 0 then return end
-
-	local minutesOffline = math.min(OFFLINE_INCOME_CAP_MINUTES, math.max(0, (os.time() - data.lastOnline) / 60))
-	if minutesOffline <= 0 then return end
+	if #museumFish == 0 or minutesElapsed <= 0 then return 0 end
 
 	local zoneBonus = {
 		[1] = getCollectionBonus(1, museumFish),
@@ -157,16 +157,26 @@ local function payOfflineIncome(player, data)
 	for _, specimen in ipairs(museumFish) do
 		local fishInfo = FishData[specimen.name]
 		if fishInfo then
-			total = total + getIncomeRate(specimen, zoneBonus[fishInfo.zone] or 0) * minutesOffline
+			total = total + getIncomeRate(specimen, zoneBonus[fishInfo.zone] or 0) * minutesElapsed
 		end
 	end
 
 	total = math.floor(total)
 	if total > 0 then
 		EconomyUtils.addCoins(player, total)
+	end
+	return total
+end
+
+-- При вході — одноразовий лямп-сум за час офлайн (з тостом)
+local function payOfflineIncome(player, data)
+	local minutesOffline = math.min(OFFLINE_INCOME_CAP_MINUTES, math.max(0, (os.time() - data.lastOnline) / 60))
+	local total = payIncomeForMinutes(player, data, minutesOffline)
+	if total > 0 then
 		notify(player, "🏛️ While you were away, the museum earned " .. total .. " coins!",
 			Color3.fromRGB(255, 215, 0), Color3.fromRGB(200, 150, 0))
 	end
+	data.lastMuseumPayout = os.time()
 end
 
 Players.PlayerAdded:Connect(function(player)
@@ -174,6 +184,23 @@ Players.PlayerAdded:Connect(function(player)
 	local data = DataManager.getData(player)
 	if not data then return end
 	payOfflineIncome(player, data)
+end)
+
+-- Поки гравець онлайн — той самий дохід нараховується періодично
+-- (тихо, без тосту; HUD оновлюється сам через EconomyUtils.addCoins)
+task.spawn(function()
+	while true do
+		task.wait(ONLINE_TICK_INTERVAL)
+		for _, player in ipairs(Players:GetPlayers()) do
+			local data = DataManager.getData(player)
+			if data then
+				data.lastMuseumPayout = data.lastMuseumPayout or os.time()
+				local minutesElapsed = (os.time() - data.lastMuseumPayout) / 60
+				payIncomeForMinutes(player, data, minutesElapsed)
+				data.lastMuseumPayout = os.time()
+			end
+		end
+	end
 end)
 
 -- ==============================
