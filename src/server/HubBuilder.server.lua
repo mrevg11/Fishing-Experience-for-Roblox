@@ -41,6 +41,7 @@ local function createHubPoint(name, offset, color, actionText)
 	billboard.Size = UDim2.new(0, 160, 0, 40)
 	billboard.StudsOffset = Vector3.new(0, 4, 0)
 	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 50
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
@@ -76,7 +77,7 @@ end
 -- ==============================
 
 local _, tutorialPrompt = createHubPoint(
-	"Tutorial NPC", Vector3.new(-64, 0, 0),
+	"Tutorial NPC", Vector3.new(-280, 0, 0),
 	Color3.fromRGB(150, 150, 150), "Talk"
 )
 
@@ -91,7 +92,7 @@ end)
 -- ==============================
 
 local _, shopPrompt = createHubPoint(
-	"Shop", Vector3.new(-40, 0, 0),
+	"Shop", Vector3.new(-200, 0, 0),
 	Color3.fromRGB(60, 180, 60), "Sell All Fish"
 )
 
@@ -125,11 +126,11 @@ shopPrompt.Triggered:Connect(sellAllFish)
 -- ==============================
 
 local comingSoonPoints = {
-	{ name = "Museum",        offset = Vector3.new(-16, 0, 0), color = Color3.fromRGB(60, 110, 220) },
-	{ name = "Ice Vault",     offset = Vector3.new(8, 0, 0),   color = Color3.fromRGB(120, 200, 220) },
-	{ name = "Warehouse",     offset = Vector3.new(32, 0, 0),  color = Color3.fromRGB(150, 110, 70) },
-	{ name = "Auction Board", offset = Vector3.new(56, 0, 0),  color = Color3.fromRGB(150, 60, 200) },
-	{ name = "Quest Board",   offset = Vector3.new(80, 0, 0),  color = Color3.fromRGB(220, 140, 40) },
+	{ name = "Museum",        offset = Vector3.new(-120, 0, 0), color = Color3.fromRGB(60, 110, 220) },
+	{ name = "Ice Vault",     offset = Vector3.new(-40, 0, 0),  color = Color3.fromRGB(120, 200, 220) },
+	{ name = "Warehouse",     offset = Vector3.new(40, 0, 0),   color = Color3.fromRGB(150, 110, 70) },
+	{ name = "Auction Board", offset = Vector3.new(120, 0, 0),  color = Color3.fromRGB(150, 60, 200) },
+	{ name = "Quest Board",   offset = Vector3.new(200, 0, 0),  color = Color3.fromRGB(220, 140, 40) },
 }
 
 for _, point in ipairs(comingSoonPoints) do
@@ -144,6 +145,6 @@ end
 -- ПРИЧАЛ — просто орієнтир, вихід в океан ще не реалізований
 -- ==============================
 
-createHubPoint("Pier", Vector3.new(104, 0, 0), Color3.fromRGB(160, 120, 80), nil)
+createHubPoint("Pier", Vector3.new(280, 0, 0), Color3.fromRGB(160, 120, 80), nil)
 
 print("[HubBuilder] Хаб згенеровано успішно!")
