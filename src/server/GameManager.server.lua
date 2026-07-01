@@ -36,6 +36,7 @@ local Events = {
 	-- UI оновлення
 	UpdateCoins    = createRemoteEvent("UpdateCoins"),
 	UpdateInventory = createRemoteEvent("UpdateInventory"),
+	UpdateRodLevel = createRemoteEvent("UpdateRodLevel"),
 }
 
 -- Запит інвентаря при відкритті рюкзака
@@ -64,8 +65,9 @@ Players.PlayerAdded:Connect(function(player)
 	print("[GameManager] Монети гравця: " .. data.coins)
 	print("[GameManager] Рівень вудки: " .. data.rodLevel)
 
-	-- Надсилаємо гравцю його монети для UI
+	-- Надсилаємо гравцю його монети та рівень вудки для UI
 	Events.UpdateCoins:FireClient(player, data.coins)
+	Events.UpdateRodLevel:FireClient(player, data.rodLevel)
 end)
 
 -- Гравець вийшов

@@ -12,8 +12,9 @@ local playerGui = player.PlayerGui
 local screenGui = playerGui:WaitForChild("MainGui")
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local CastRod   = RemoteEvents:WaitForChild("CastRod")
-local CatchFish = RemoteEvents:WaitForChild("CatchFish")
+local CastRod       = RemoteEvents:WaitForChild("CastRod")
+local CatchFish     = RemoteEvents:WaitForChild("CatchFish")
+local UpdateRodLevel = RemoteEvents:WaitForChild("UpdateRodLevel")
 
 -- ==============================
 -- STATE
@@ -21,11 +22,23 @@ local CatchFish = RemoteEvents:WaitForChild("CatchFish")
 
 local isFishing = false
 local TEXT_SIZE = 22
+local rodLevel = 1
 
 local rodWaitTimes = {
 	[1] = {8, 12}, [2] = {6, 9}, [3] = {5, 7},
 	[4] = {3, 5},  [5] = {2, 4}, [6] = {1, 3},
 }
+
+-- B3: розмір "Ideal" зони і швидкість повзунка ростуть з рівнем вудки
+local rodZoneConfig = {
+	[1] = { idealSize = 0.08, sliderSpeed = 0.85 },
+	[2] = { idealSize = 0.10, sliderSpeed = 1.00 },
+	[3] = { idealSize = 0.13, sliderSpeed = 1.15 },
+	[4] = { idealSize = 0.16, sliderSpeed = 1.30 },
+	[5] = { idealSize = 0.19, sliderSpeed = 1.45 },
+	[6] = { idealSize = 0.23, sliderSpeed = 1.60 },
+}
+local currentSliderSpeed = rodZoneConfig[1].sliderSpeed
 
 local rarityGlow = {
 	Common    = Color3.fromRGB(200, 200, 200),
@@ -192,6 +205,23 @@ local slider = newFrame(
 addRound(slider, 4)
 
 -- ==============================
+-- ROD LEVEL
+-- ==============================
+
+local weakZone = zones[1]
+local perfectZone = zones[4]
+
+local function applyRodLevel(level)
+	rodLevel = level
+	local cfg = rodZoneConfig[level] or rodZoneConfig[1]
+	perfectZone.size = cfg.idealSize
+	weakZone.size = 0.45 - cfg.idealSize
+	currentSliderSpeed = cfg.sliderSpeed
+end
+
+UpdateRodLevel.OnClientEvent:Connect(applyRodLevel)
+
+-- ==============================
 -- CATCH NOTIFICATION
 -- ==============================
 
@@ -260,7 +290,7 @@ local function runTimingBar(callback)
 
 	local sliderPos = 0
 	local direction = 1
-	local speed = 0.85
+	local speed = currentSliderSpeed
 	local active = true
 	local timeLeft = 3
 
@@ -328,7 +358,8 @@ fishButton.MouseButton1Click:Connect(function()
 	fishButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 	fishButton.Active = false
 
-	local waitTime = math.random(rodWaitTimes[1][1], rodWaitTimes[1][2])
+	local waitRange = rodWaitTimes[rodLevel] or rodWaitTimes[1]
+	local waitTime = math.random(waitRange[1], waitRange[2])
 	task.wait(waitTime)
 	if not isFishing then return end
 

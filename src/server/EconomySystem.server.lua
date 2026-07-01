@@ -17,9 +17,8 @@ local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
 -- PRICE CALCULATION
 -- ==============================
 
-local weatherBonusConditions = {"rain", "fog", "storm"}
-local timeBonusConditions = {"night", "evening"}
-
+-- Ціна продажу стала за будь-якої погоди/часу доби.
+-- Єдиний бонус — префікс, яким риба вже позначена в момент лову.
 local prefixBonuses = {
 	Rainy    = 0.10,
 	Dusk     = 0.15,
@@ -28,27 +27,10 @@ local prefixBonuses = {
 	Misty    = 0.35,
 }
 
-local function calculatePrice(fish, currentWeather, currentTimeOfDay)
+local function calculatePrice(fish)
 	local basePrice = fish.basePrice
 	local multiplier = 1.0
 
-	-- Weather bonus +25%
-	for _, condition in ipairs(weatherBonusConditions) do
-		if currentWeather == condition then
-			multiplier = multiplier + 0.25
-			break
-		end
-	end
-
-	-- Time bonus +25%
-	for _, condition in ipairs(timeBonusConditions) do
-		if currentTimeOfDay == condition then
-			multiplier = multiplier + 0.25
-			break
-		end
-	end
-
-	-- Prefix bonus
 	if fish.prefix and prefixBonuses[fish.prefix] then
 		multiplier = multiplier + prefixBonuses[fish.prefix]
 	end
@@ -107,9 +89,7 @@ SellFish.OnServerEvent:Connect(function(player, fishName, prefix)
 		return
 	end
 
-	-- Get current weather and time from FishingSystem
-	-- We pass them from client for now, server will validate later
-	local price = calculatePrice(fish, "clear", "day")
+	local price = calculatePrice(fish)
 
 	-- Remove fish from inventory
 	table.remove(data.inventory.fish, index)
@@ -139,8 +119,8 @@ function EconomySystem.removeCoins(player, amount)
 	return removeCoins(player, amount)
 end
 
-function EconomySystem.calculatePrice(fish, weather, timeOfDay)
-	return calculatePrice(fish, weather, timeOfDay)
+function EconomySystem.calculatePrice(fish)
+	return calculatePrice(fish)
 end
 
 print("[EconomySystem] Ініціалізовано успішно!")
