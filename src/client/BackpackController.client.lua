@@ -203,12 +203,11 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
--- Фіксована ширина під 4 колонки (4*130 + 3*15 = 565, +трохи для скролбару),
--- центрована у вікні — сама група плиток по центру, а плитки всередині
--- заповнюються зліва направо
-itemGrid.AnchorPoint = Vector2.new(0.5, 0)
-itemGrid.Size = UDim2.new(0, 575, 1, -145)
-itemGrid.Position = UDim2.new(0.5, 0, 0, 130)
+-- Сам ScrollingFrame — майже на всю ширину вікна, щоб скролбар був
+-- біля справжнього правого краю. Центрування блоку плиток робимо
+-- через UIPadding нижче, а не через розмір цього фрейма
+itemGrid.Size = UDim2.new(1, -30, 1, -145)
+itemGrid.Position = UDim2.new(0, 20, 0, 130)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
@@ -223,11 +222,13 @@ gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 gridLayout.Parent = itemGrid
 
--- Без цього відступу верхній/лівий рядок плиток обрізає зовнішню
--- половину UIStroke-рамки (ScrollingFrame клипає власні межі)
+-- Центруємо блок плиток (4 колонки = 565px) усередині ширшого itemGrid
+-- відступами, а не розміром самого ScrollingFrame — тоді скролбар
+-- лишається біля справжнього правого краю вікна
 local gridPadding = Instance.new("UIPadding")
 gridPadding.PaddingTop = UDim.new(0, 4)
-gridPadding.PaddingLeft = UDim.new(0, 4)
+gridPadding.PaddingLeft = UDim.new(0, 28)
+gridPadding.PaddingRight = UDim.new(0, 27)
 gridPadding.Parent = itemGrid
 
 -- ==============================
