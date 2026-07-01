@@ -64,6 +64,19 @@ local rarityCaps = {
 	Legendary = 2,
 }
 
+-- speciesTemplate іде в порядку документа (де кілька спецвидів за
+-- умовою вставлені не по рідкості) — сортуємо для показу, щоб однакова
+-- рідкість завжди йшла разом
+local rarityRank = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5 }
+local sortedSpecies = {}
+for _, species in ipairs(speciesTemplate) do
+	table.insert(sortedSpecies, species)
+end
+table.sort(sortedSpecies, function(a, b)
+	if a.zone ~= b.zone then return a.zone < b.zone end
+	return rarityRank[a.rarity] < rarityRank[b.rarity]
+end)
+
 local rarityColors = {
 	Common    = Color3.fromRGB(100, 100, 100),
 	Uncommon  = Color3.fromRGB(30, 140, 30),
@@ -232,7 +245,7 @@ local function renderMuseum()
 		zoneHeader.LayoutOrder = order
 		zoneHeader.BackgroundTransparency = 1
 
-		for _, species in ipairs(speciesTemplate) do
+		for _, species in ipairs(sortedSpecies) do
 			if species.zone == zone then
 				order = order + 1
 				local count = countByName[species.name] or 0
