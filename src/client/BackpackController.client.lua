@@ -249,7 +249,7 @@ emptyLabel.Visible = false
 
 local function clearGrid()
 	for _, child in ipairs(itemGrid:GetChildren()) do
-		if not child:IsA("UIGridLayout") then
+		if not (child:IsA("UIGridLayout") or child:IsA("UIPadding")) then
 			child:Destroy()
 		end
 	end
