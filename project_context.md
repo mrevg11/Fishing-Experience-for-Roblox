@@ -18,9 +18,12 @@ D:\FishingExperience\
 ├── src/
 │   ├── server/
 │   │   ├── DataManager.lua          (ModuleScript)
+│   │   ├── FishData.lua             (ModuleScript — спільна таблиця риби)
+│   │   ├── EconomyUtils.lua         (ModuleScript — ціна/монети, спільно для EconomySystem і HubBuilder)
 │   │   ├── GameManager.server.lua   (Script)
 │   │   ├── FishingSystem.server.lua (Script)
-│   │   └── EconomySystem.server.lua (Script)
+│   │   ├── EconomySystem.server.lua (Script)
+│   │   └── HubBuilder.server.lua    (Script — процедурна генерація хабу)
 │   └── client/
 │       ├── ClientManager.client.lua        (LocalScript — порожній, тільки ініціалізація)
 │       ├── HudController.client.lua        (LocalScript)
@@ -45,6 +48,12 @@ D:\FishingExperience\
       "DataManager": {
         "$path": "src/server/DataManager.lua"
       },
+      "FishData": {
+        "$path": "src/server/FishData.lua"
+      },
+      "EconomyUtils": {
+        "$path": "src/server/EconomyUtils.lua"
+      },
       "GameManager": {
         "$path": "src/server/GameManager.server.lua"
       },
@@ -53,6 +62,9 @@ D:\FishingExperience\
       },
       "EconomySystem": {
         "$path": "src/server/EconomySystem.server.lua"
+      },
+      "HubBuilder": {
+        "$path": "src/server/HubBuilder.server.lua"
       }
     },
     "StarterGui": {
@@ -110,7 +122,8 @@ D:\FishingExperience\
 - Створює всі RemoteEvents в ReplicatedStorage/RemoteEvents:
   - CastRod, CatchFish, SellFish, OpenInventory
   - AddToMuseum, ListAuction
-  - UpdateCoins, UpdateInventory, UpdateRodLevel, UpdateWeather
+  - UpdateCoins, UpdateInventory, UpdateRodLevel, UpdateWeather, FishSpoiled
+  - ShowNotification (дозволяє серверним скриптам показувати тост через NotificationController)
   - RequestInventory, RequestPlayerState
 - Coins/rodLevel більше НЕ пушаться наосліп через task.wait(0.5) —
   клієнт сам робить RequestPlayerState:FireServer() коли його
@@ -120,7 +133,7 @@ D:\FishingExperience\
 - Обробляє RequestInventory — надсилає інвентар клієнту
 
 #### FishingSystem.server.lua (Script)
-- Повна таблиця FishData — 30 видів риби (Зона 1 і Зона 2)
+- require(FishData) — 30 видів риби (Зона 1 і Зона 2), таблиця тепер спільна
 - Система погоди: clear(35%), cloudy(30%), rain(20%), fog(10%), storm(5%)
   - Зміна кожні 10 хвилин (фіксований інтервал)
 - Цикл дня/ночі (1 година разом): morning(10хв), day(20хв), evening(15хв), night(15хв)
@@ -136,10 +149,31 @@ D:\FishingExperience\
 - Обробка CastRod.OnServerEvent → catchFish()
 - Перевірка місткості рюкзака: 10 + (backpackLevel-1)*5 слотів
 
-#### EconomySystem.server.lua (Script)
-- Ціна продажу = basePrice × (1 + бонус префікса). Погода/час доби
+#### FishData.lua (ModuleScript)
+- Таблиця риби (30 видів) винесена сюди з FishingSystem — раніше була
+  локальною і недоступною для інших скриптів (EconomySystem рахував
+  ціну через fish.basePrice, якого спіймана риба НІКОЛИ не мала —
+  продаж впав би з помилкою; тепер ціна береться з FishData[fish.name])
+
+#### EconomyUtils.lua (ModuleScript)
+- calculatePrice(fish), addCoins(player, amount), removeCoins(player, amount)
+- Спільна логіка для EconomySystem (продаж 1 риби) і HubBuilder (продаж усього рюкзака)
+- Ціна продажу = basePrice (з FishData) × (1 + бонус префікса). Погода/час доби
   НЕ впливають на ціну продажу (свідоме рішення розробника)
-- Обробка SellFish.OnServerEvent → продаж риби з інвентаря
+
+#### EconomySystem.server.lua (Script)
+- Обробка SellFish.OnServerEvent → продаж однієї риби з інвентаря (через EconomyUtils)
+
+#### HubBuilder.server.lua (Script)
+- Процедурно розставляє на HUB_ORIGIN = (0,1,60) плейсхолдер-частини
+  з BillboardGui-підписом і ProximityPrompt: Tutorial NPC, Shop,
+  Museum, Ice Vault, Warehouse, Auction Board, Quest Board, Pier
+- Shop РЕАЛЬНО ПРАЦЮЄ — "Sell All Fish" продає весь рюкзак риби
+  через EconomyUtils, показує тост із сумою
+- Решта точок (Museum/Ice Vault/Warehouse/Auction/Quest) показують
+  "Coming soon!" — самі системи ще не реалізовані
+- Pier — лише орієнтир без ProximityPrompt (вихід в океан не готовий)
+- Це тимчасові Part-плейсхолдери, друг замінить на фінальний 3D-арт
 - Публічне API: addCoins(), removeCoins(), calculatePrice()
 
 ### Клієнтські контролери
@@ -189,7 +223,11 @@ D:\FishingExperience\
   2. Pull! → 5 секунд щоб натиснути
   3. Таймінг-бар → 3 секунди щоб натиснути
   4. Результат → CastRod:FireServer(result, inFishingSpot, zone)
-     (zone і inFishingSpot поки завжди 1/false — див. "Не реалізовано")
+     (zone і inFishingSpot поки завжди 1/false — див. "Не реалізовано".
+     УВАГА: сервер приймає ці параметри від клієнта БЕЗ перевірки —
+     коли з'явиться Зона 2/FishingSpot, сервер має сам визначати їх
+     з позиції гравця, інакше exploit дозволить ловити найкращу рибу
+     без ліцензії/локації)
 - Таймінг-бар по центру екрану (500x100)
 - Зони перемішуються при кожній ловлі (shuffle)
 - Зони з текстом множника по центру (розміри для рівня вудки 1):
@@ -203,6 +241,9 @@ D:\FishingExperience\
 - Публічне API: NotificationController.show(text, color, borderColor)
 - Тривалість повідомлення: 3 секунди
 - Вітальне повідомлення при вході: "🎣 Welcome to Fishing Experience!"
+- Підписка на FishSpoiled.OnClientEvent (протухла риба) і
+  ShowNotification.OnClientEvent (дозволяє будь-якому серверному
+  скрипту, напр. HubBuilder, показати тост цьому гравцю)
 - TEXT_SIZE = 22
 
 ---
@@ -327,21 +368,23 @@ rojo serve
 
 ## ЩО НЕ РЕАЛІЗОВАНО (НАСТУПНІ КРОКИ)
 
-- [ ] NPC Магазин — продаж риби
-- [ ] Музей колекцій
-- [ ] Льодовий льох
-- [ ] Склад ресурсів
-- [ ] Аукціон (MessagingService)
+- [x] NPC Магазин — продаж риби (HubBuilder, "Sell All Fish", працює)
+- [ ] Музей колекцій (плейсхолдер-точка є, логіки немає)
+- [ ] Льодовий льох (плейсхолдер-точка є, логіки немає)
+- [ ] Склад ресурсів (плейсхолдер-точка є; сама система ресурсів теж не готова)
+- [ ] Аукціон (MessagingService) (плейсхолдер-точка є, логіки немає)
 - [ ] Система ліцензій і зон
 - [ ] Паті-система
-- [ ] Туторіал
+- [ ] Туторіал (є лише привітальне повідомлення від Tutorial NPC, не 10-крокова послідовність з F1)
 - [ ] Збереження позиції човна
 - [ ] Roblox Friends API для бонусу музею
 - [ ] Верстак (заблоковано до Хвилі 2)
-- [ ] Будівлі хабу (музей, льох, склад, причал)
-- [ ] Острови і NPC-торговці
+- [x] Плейсхолдер-структура хабу (HubBuilder.server.lua — Part'и з
+      BillboardGui+ProximityPrompt на HUB_ORIGIN=(0,1,60), не фінальний арт)
+- [ ] Острови і NPC-торговці ресурсів
 - [ ] Човен і переміщення
-- [ ] FishingSpot зони в океані (зона в CastRod поки завжди=1, inFishingSpot=false)
+- [ ] FishingSpot зони в океані (зона в CastRod поки завжди=1, inFishingSpot=false,
+      і взагалі не перевіряється сервером — див. увагу в FishingController вище)
 - [ ] RemoteEvents OpenInventory/AddToMuseum/ListAuction створені, але без обробників
 
 ---
