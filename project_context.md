@@ -23,13 +23,15 @@ D:\FishingExperience\
 │   │   ├── GameManager.server.lua   (Script)
 │   │   ├── FishingSystem.server.lua (Script)
 │   │   ├── EconomySystem.server.lua (Script)
+│   │   ├── MuseumSystem.server.lua  (Script — донат риби, ліміти, офлайн-дохід)
 │   │   └── HubBuilder.server.lua    (Script — процедурна генерація хабу)
 │   └── client/
 │       ├── ClientManager.client.lua        (LocalScript — порожній, тільки ініціалізація)
 │       ├── HudController.client.lua        (LocalScript)
 │       ├── BackpackController.client.lua   (LocalScript)
 │       ├── FishingController.client.lua    (LocalScript)
-│       └── NotificationController.client.lua (LocalScript)
+│       ├── NotificationController.client.lua (LocalScript)
+│       └── MuseumController.client.lua     (LocalScript — вікно перегляду колекції)
 ├── default.project.json
 ├── .gitignore
 ├── .luaurc
@@ -63,6 +65,9 @@ D:\FishingExperience\
       "EconomySystem": {
         "$path": "src/server/EconomySystem.server.lua"
       },
+      "MuseumSystem": {
+        "$path": "src/server/MuseumSystem.server.lua"
+      },
       "HubBuilder": {
         "$path": "src/server/HubBuilder.server.lua"
       }
@@ -79,6 +84,9 @@ D:\FishingExperience\
         },
         "BackpackController": {
           "$path": "src/client/BackpackController.client.lua"
+        },
+        "MuseumController": {
+          "$path": "src/client/MuseumController.client.lua"
         },
         "FishingController": {
           "$path": "src/client/FishingController.client.lua"
@@ -164,17 +172,30 @@ D:\FishingExperience\
 #### EconomySystem.server.lua (Script)
 - Обробка SellFish.OnServerEvent → продаж однієї риби з інвентаря (через EconomyUtils)
 
+#### MuseumSystem.server.lua (Script)
+- AddToMuseum.OnServerEvent → донат риби з рюкзака (кнопка "🏛️" у слоті BackpackController)
+- Ліміти екземплярів по рідкості (D3): Common 6, Uncommon 5, Rare 4, Epic 3, Legendary 2
+- Якщо вид уже заповнений — заміна найслабшого екземпляра (за prefixBonus),
+  якщо новий кращий; інакше донат відхиляється. Стара риба НЕ повертається в рюкзак
+- Офлайн пасивний дохід (F3) — рахується один раз при вході:
+  minutesOffline (кап 2880=48год) × museumIncome кожного екземпляра ×
+  (1+бонус префікса) × (1+бонус колекції зони: +30% якщо є хоч 1 кожного
+  виду зони, +100% якщо всі види зони на максимумі — замінює +30%)
+- RequestMuseum.OnServerEvent → надсилає data.museum при відкритті вікна
+- Публічний доступ до цін через EconomyUtils.calculatePrice/addCoins
+
 #### HubBuilder.server.lua (Script)
 - Процедурно розставляє на HUB_ORIGIN = (0,1,60) плейсхолдер-частини
   з BillboardGui-підписом і ProximityPrompt: Tutorial NPC, Shop,
   Museum, Ice Vault, Warehouse, Auction Board, Quest Board, Pier
 - Shop РЕАЛЬНО ПРАЦЮЄ — "Sell All Fish" продає весь рюкзак риби
   через EconomyUtils, показує тост із сумою
-- Решта точок (Museum/Ice Vault/Warehouse/Auction/Quest) показують
+- Museum РЕАЛЬНО ПРАЦЮЄ — точку відкриває MuseumController на клієнті
+  (слухає той самий ProximityPrompt.Triggered), сама логіка в MuseumSystem
+- Решта точок (Ice Vault/Warehouse/Auction/Quest) показують
   "Coming soon!" — самі системи ще не реалізовані
 - Pier — лише орієнтир без ProximityPrompt (вихід в океан не готовий)
 - Це тимчасові Part-плейсхолдери, друг замінить на фінальний 3D-арт
-- Публічне API: addCoins(), removeCoins(), calculatePrice()
 
 ### Клієнтські контролери
 
@@ -245,6 +266,17 @@ D:\FishingExperience\
   ShowNotification.OnClientEvent (дозволяє будь-якому серверному
   скрипту, напр. HubBuilder, показати тост цьому гравцю)
 - TEXT_SIZE = 22
+
+#### MuseumController.client.lua (LocalScript)
+- Вікно перегляду колекції (650x550, по центру), список видів
+  згрупований по зонах, кожен рядок "Назва   count/cap"
+- Дублює зону/рідкість риби локально (speciesTemplate) — клієнт не
+  має доступу до FishData (лежить у ServerScriptService)
+- Відкривається через той самий ProximityPrompt, що створив
+  HubBuilder на точці "Museum" (клієнт підписується напряму на нього)
+- RequestMuseum:FireServer() при відкритті, підписка на UpdateMuseum
+- Лише перегляд — донат риби робиться кнопкою "🏛️" у BackpackController
+- Хвиля 1: особистий UI. Вітрина з живою рибою — Хвиля 2-3 (див. "не реалізовано")
 
 ---
 
@@ -369,17 +401,15 @@ rojo serve
 ## ЩО НЕ РЕАЛІЗОВАНО (НАСТУПНІ КРОКИ)
 
 - [x] NPC Магазин — продаж риби (HubBuilder, "Sell All Fish", працює)
-- [ ] Музей колекцій (плейсхолдер-точка є, логіки немає)
-      РІШЕННЯ (2026-07-01): Хвиля 1 — особистий UI-меню (як зараз
-      задокументовано в D3, дані data.museum персональні). У майбутньому
-      (Хвиля 2-3, "polish") — перейти на повноцінну будівлю з вітринами,
-      де фізично "плаває" риба, яку туди посадив гравець, з урахуванням
-      ліміту екземплярів по рідкості (Common 6, Uncommon 5, Rare 4,
-      Epic 3, Legendary 2, майбутні рідкості 1). Це вимагає: (а) готові
-      3D-моделі риби від друга (Blockbench), (б) особисту плот-систему
-      на гравця (як для човна, A2) — щоб у кожного була своя фізична
-      будівля музею, а не спільна точка. НЕ робити зараз — залежності
-      ще не готові.
+- [x] Музей колекцій — Хвиля 1 (особистий UI, MuseumSystem+MuseumController):
+      донат з рюкзака, ліміти по рідкості, заміна слабшого екземпляра,
+      офлайн пасивний дохід з бонусом колекції/префікса
+      РІШЕННЯ (2026-07-01): Хвиля 2-3 ("polish") — перейти на повноцінну
+      будівлю з вітринами, де фізично "плаває" риба, яку туди посадив
+      гравець (замість списку в UI). Вимагає: (а) готові 3D-моделі риби
+      від друга (Blockbench), (б) особисту плот-систему на гравця (як
+      для човна, A2) — щоб у кожного була своя фізична будівля музею,
+      а не спільна точка. НЕ робити зараз — залежності ще не готові.
 - [ ] Льодовий льох (плейсхолдер-точка є, логіки немає)
 - [ ] Склад ресурсів (плейсхолдер-точка є; сама система ресурсів теж не готова)
 - [ ] Аукціон (MessagingService) (плейсхолдер-точка є, логіки немає)
@@ -395,7 +425,7 @@ rojo serve
 - [ ] Човен і переміщення
 - [ ] FishingSpot зони в океані (зона в CastRod поки завжди=1, inFishingSpot=false,
       і взагалі не перевіряється сервером — див. увагу в FishingController вище)
-- [ ] RemoteEvents OpenInventory/AddToMuseum/ListAuction створені, але без обробників
+- [ ] RemoteEvents OpenInventory/ListAuction створені, але без обробників (AddToMuseum вже має обробник у MuseumSystem)
 
 ---
 
