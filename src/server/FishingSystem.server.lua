@@ -36,6 +36,8 @@ local weatherChances = {
 	{ weather = "storm",  chance = 5  },
 }
 
+local WEATHER_CHANGE_INTERVAL = 10 * 60
+
 local function secondsLeft(nextChangeAt)
 	return math.max(0, math.floor(nextChangeAt - os.clock()))
 end
@@ -57,6 +59,10 @@ local function rollWeather()
 		cumulative = cumulative + entry.chance
 		if roll <= cumulative then
 			currentWeather = entry.weather
+			-- Оновлюємо мітку ПЕРЕД трансляцією (як у циклі дня/ночі) —
+			-- інакше broadcastWeather() рахує вже застарілу weatherNextChangeAt
+			-- і клієнти отримують ~0 секунд назавжди до наступної зміни
+			weatherNextChangeAt = os.clock() + WEATHER_CHANGE_INTERVAL
 			print("[FishingSystem] Погода змінилась: " .. currentWeather)
 			broadcastWeather()
 			return
@@ -71,12 +77,12 @@ local timeOfDaySchedule = {
 	{ phase = "night",   duration = 15 * 60 },
 }
 
-local WEATHER_CHANGE_INTERVAL = 10 * 60
+-- Початкова мітка для першого інтервалу (до першої rollWeather())
+weatherNextChangeAt = os.clock() + WEATHER_CHANGE_INTERVAL
 
 -- Weather cycle
 task.spawn(function()
 	while true do
-		weatherNextChangeAt = os.clock() + WEATHER_CHANGE_INTERVAL
 		task.wait(WEATHER_CHANGE_INTERVAL)
 		rollWeather()
 	end
