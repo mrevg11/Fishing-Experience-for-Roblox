@@ -280,7 +280,7 @@ local function renderInventory(tab)
 		addRound(slot, 12)
 		addBorder(slot,
 			item.type == "fish"
-				and (rarityGlow[item.data.rarity] or Color3.white)
+				and (rarityGlow[item.data.rarity] or Color3.fromRGB(255, 255, 255))
 				or Color3.fromRGB(120, 220, 80), 2)
 
 		local nameLabel = newLabel(slot, item.data.name,

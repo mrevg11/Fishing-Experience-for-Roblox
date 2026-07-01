@@ -347,8 +347,8 @@ local function showCatchNotif(fish, missed)
 	else
 		local prefix = fish.prefix and fish.prefix .. " " or ""
 		catchLabel.Text = "✨ " .. prefix .. fish.name .. "\n[" .. fish.rarity .. "]"
-		catchLabel.TextColor3 = rarityGlow[fish.rarity] or Color3.white
-		addBorder(catchNotif, rarityGlow[fish.rarity] or Color3.white, 3)
+		catchLabel.TextColor3 = rarityGlow[fish.rarity] or Color3.fromRGB(255, 255, 255)
+		addBorder(catchNotif, rarityGlow[fish.rarity] or Color3.fromRGB(255, 255, 255), 3)
 	end
 	catchNotif.Visible = true
 	task.delay(2.5, function() catchNotif.Visible = false end)

@@ -2,7 +2,6 @@
 -- EconomySystem
 -- Handles fish selling, price calculation, coins management
 
-local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
