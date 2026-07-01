@@ -288,7 +288,7 @@ local function renderInventory(tab)
 		addBorder(slot,
 			item.type == "fish"
 				and (rarityGlow[item.data.rarity] or Color3.fromRGB(255, 255, 255))
-				or Color3.fromRGB(120, 220, 80), 2)
+				or Color3.fromRGB(120, 220, 80), 3)
 
 		local nameLabel = newLabel(slot, item.data.name,
 			UDim2.new(1, -32, 0.4, 0),
