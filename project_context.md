@@ -110,27 +110,32 @@ D:\FishingExperience\
 - Створює всі RemoteEvents в ReplicatedStorage/RemoteEvents:
   - CastRod, CatchFish, SellFish, OpenInventory
   - AddToMuseum, ListAuction
-  - UpdateCoins, UpdateInventory
+  - UpdateCoins, UpdateInventory, UpdateRodLevel, UpdateWeather
   - RequestInventory
-- При вході гравця: завантажує дані, надсилає UpdateCoins клієнту
+- При вході гравця: завантажує дані, надсилає UpdateCoins і UpdateRodLevel клієнту
 - При виході: зберігає дані через DataManager
 - Обробляє RequestInventory — надсилає інвентар клієнту
 
 #### FishingSystem.server.lua (Script)
 - Повна таблиця FishData — 30 видів риби (Зона 1 і Зона 2)
 - Система погоди: clear(35%), cloudy(30%), rain(20%), fog(10%), storm(5%)
-  - Зміна кожні 8-12 хвилин
-- Цикл дня/ночі: morning(5хв), day(7хв), evening(4хв), night(4хв)
+  - Зміна кожні 10 хвилин (фіксований інтервал)
+- Цикл дня/ночі (1 година разом): morning(10хв), day(20хв), evening(15хв), night(15хв)
+- Погода і час доби транслюються всім клієнтам через UpdateWeather
+  (при кожній зміні + одразу новому гравцю при вході)
+- Умова "day" вимагає саме фазу day (не morning)
 - Формула визначення риби:
   - базовий шанс × множник бару × погода × час доби × FishingSpot(x1.2/x0.8)
 - Базові шанси: Common 55%, Uncommon 25%, Rare 12%, Epic 6%, Legendary 2%
 - Система префіксів: Rainy(+10%), Dusk(+15%), Midnight(+20%), Stormy(+35%), Misty(+35%)
+  - Ідеальний хіт бару (perfect) → +5% до шансу префікса
 - Множники бару: weak=0.5, medium=1.0, good=1.5, perfect=2.0
 - Обробка CastRod.OnServerEvent → catchFish()
 - Перевірка місткості рюкзака: 10 + (backpackLevel-1)*5 слотів
 
 #### EconomySystem.server.lua (Script)
-- Розрахунок ціни риби з бонусами (погода +25%, префікс +10/15/20/35%)
+- Ціна продажу = basePrice × (1 + бонус префікса). Погода/час доби
+  НЕ впливають на ціну продажу (свідоме рішення розробника)
 - Обробка SellFish.OnServerEvent → продаж риби з інвентаря
 - Публічне API: addCoins(), removeCoins(), calculatePrice()
 
@@ -143,7 +148,8 @@ D:\FishingExperience\
 #### HudController.client.lua (LocalScript)
 - Відображення монет (зліва зверху, 220x55, жовта рамка)
 - Відображення погоди і часу доби (по центру зверху, 280x55, блакитна рамка)
-- Підписка на UpdateCoins.OnClientEvent
+  — оновлюється в реальному часі через UpdateWeather.OnClientEvent
+- Підписка на UpdateCoins.OnClientEvent, UpdateWeather.OnClientEvent
 - TEXT_SIZE = 22, TextScaled = false
 - Чорна обводка тексту (TextStrokeColor3, TextStrokeTransparency = 0)
 
@@ -162,14 +168,18 @@ D:\FishingExperience\
 
 #### FishingController.client.lua (LocalScript)
 - Кнопка "🎣 Cast Rod" (220x65, синя, по центру знизу)
+- Підписка на UpdateRodLevel.OnClientEvent — rodLevel реально впливає на:
+  - час очікування закидання (rodWaitTimes[rodLevel], 8-12с → 1-3с)
+  - розмір "Ideal" зони бару (8%→23%) і швидкість повзунка (0.85→1.60)
 - Повний цикл рибалки:
-  1. Cast Rod → очікування (8-12с для вудки рівня 1)
+  1. Cast Rod → очікування (залежить від rodLevel)
   2. Pull! → 5 секунд щоб натиснути
   3. Таймінг-бар → 3 секунди щоб натиснути
   4. Результат → CastRod:FireServer(result, inFishingSpot, zone)
+     (zone і inFishingSpot поки завжди 1/false — див. "Не реалізовано")
 - Таймінг-бар по центру екрану (500x100)
 - Зони перемішуються при кожній ловлі (shuffle)
-- Зони з текстом множника по центру:
+- Зони з текстом множника по центру (розміри для рівня вудки 1):
   - 🔴 Weak 37% x0.5, 🟡 Medium 35% x1.0, 🟢 Good 20% x1.5, 🔵 Perfect 8% x2.0
 - Повідомлення про спійману рибу (назва, рідкість, префікс)
 - Повідомлення "The fish got away!" якщо пропустив
@@ -313,14 +323,14 @@ rojo serve
 - [ ] Система ліцензій і зон
 - [ ] Паті-система
 - [ ] Туторіал
-- [ ] Синхронізація погоди і часу з клієнтом (weatherLabel в HudController статичний)
 - [ ] Збереження позиції човна
 - [ ] Roblox Friends API для бонусу музею
 - [ ] Верстак (заблоковано до Хвилі 2)
 - [ ] Будівлі хабу (музей, льох, склад, причал)
 - [ ] Острови і NPC-торговці
 - [ ] Човен і переміщення
-- [ ] FishingSpot зони в океані
+- [ ] FishingSpot зони в океані (зона в CastRod поки завжди=1, inFishingSpot=false)
+- [ ] RemoteEvents OpenInventory/AddToMuseum/ListAuction створені, але без обробників
 
 ---
 
@@ -350,3 +360,7 @@ rojo serve
 6. Множник ідеальної зони бару: **x2.0** (не x2.5 як в документі)
 7. 3D моделі риби — Blockbench (воксельний стиль), друг займається
 8. Синхронізація: VS Code → Rojo → Studio (одностороння)
+9. Ціна продажу риби НЕ залежить від погоди/часу доби — лише від
+   basePrice і префікса риби (свідоме рішення, документ E1 тут не діє)
+10. Погода змінюється кожні 10 хв (фіксовано); цикл дня/ночі = 1 година
+    (morning 10хв, day 20хв, evening 15хв, night 15хв) — не як в документі
