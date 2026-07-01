@@ -147,8 +147,13 @@ D:\FishingExperience\
 
 #### HudController.client.lua (LocalScript)
 - Відображення монет (зліва зверху, 220x55, жовта рамка)
-- Відображення погоди і часу доби (по центру зверху, 280x55, блакитна рамка)
-  — оновлюється в реальному часі через UpdateWeather.OnClientEvent
+- Бар погоди/часу доби (по центру зверху, 480x55, блакитна рамка),
+  симетрично розділений вертикальним роздільником навпіл:
+  - Ліва половина — фаза доби + власний таймер зворотного відліку
+  - Права половина — погода + власний таймер зворотного відліку
+  - Таймери рахують локально щосекунди між серверними оновленнями
+    (UpdateWeather передає weatherSecondsLeft і phaseSecondsLeft,
+    сервер рахує їх від os.clock()-міток weatherNextChangeAt/phaseNextChangeAt)
 - Підписка на UpdateCoins.OnClientEvent, UpdateWeather.OnClientEvent
 - TEXT_SIZE = 22, TextScaled = false
 - Чорна обводка тексту (TextStrokeColor3, TextStrokeTransparency = 0)
