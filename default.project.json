@@ -1,0 +1,42 @@
+{
+  "name": "FishingExperience",
+  "tree": {
+    "$className": "DataModel",
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "DataManager": {
+        "$path": "src/server/DataManager.lua"
+      },
+      "GameManager": {
+        "$path": "src/server/GameManager.server.lua"
+      },
+      "FishingSystem": {
+        "$path": "src/server/FishingSystem.server.lua"
+      },
+      "EconomySystem": {
+        "$path": "src/server/EconomySystem.server.lua"
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "MainGui": {
+        "$className": "ScreenGui",
+        "ClientManager": {
+          "$path": "src/client/ClientManager.client.lua"
+        },
+        "HudController": {
+          "$path": "src/client/HudController.client.lua"
+        },
+        "BackpackController": {
+          "$path": "src/client/BackpackController.client.lua"
+        },
+        "FishingController": {
+          "$path": "src/client/FishingController.client.lua"
+        },
+        "NotificationController": {
+          "$path": "src/client/NotificationController.client.lua"
+        }
+      }
+    }
+  }
+}

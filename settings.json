@@ -1,0 +1,5 @@
+{
+  "luau-lsp.platform": "roblox",
+  "luau-lsp.roblox.securityLevel": "PluginSecurity",
+  "luau-lsp.completion.suggestImports": true
+}
