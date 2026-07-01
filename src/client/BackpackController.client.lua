@@ -281,10 +281,11 @@ local function renderInventory(tab)
 				and (rarityGlow[item.data.rarity] or Color3.white)
 				or Color3.fromRGB(120, 220, 80), 2)
 
-		newLabel(slot, item.data.name,
+		local nameLabel = newLabel(slot, item.data.name,
 			UDim2.new(1, -4, 0.4, 0),
 			UDim2.new(0, 2, 0, 5),
 			Color3.fromRGB(255, 255, 255), 33)
+		nameLabel.TextWrapped = true
 
 		if item.type == "fish" and item.data.prefix then
 			newLabel(slot, "✨ " .. item.data.prefix,
