@@ -101,6 +101,13 @@ local function newLabel(parent, text, size, pos, color, zindex)
 	return l
 end
 
+local function formatCountdown(seconds)
+	seconds = math.max(0, math.floor(seconds))
+	local m = math.floor(seconds / 60)
+	local s = seconds % 60
+	return string.format("%d:%02d", m, s)
+end
+
 local function newButton(parent, text, size, pos, bgColor, zindex)
 	local b = Instance.new("TextButton")
 	b.Size = size
@@ -295,8 +302,7 @@ local function renderInventory(tab)
 			else
 				-- Реальний залишок часу до псування, а не повна тривалість
 				local remaining = math.max(0, item.data.spoilTimer - (os.time() - item.data.caughtAt))
-				local mins = math.floor(remaining / 60)
-				newLabel(slot, "⏱ " .. mins .. "m",
+				newLabel(slot, "⏱ " .. formatCountdown(remaining),
 					UDim2.new(1, 0, 0.22, 0),
 					UDim2.new(0, 0, 0.72, 0),
 					Color3.fromRGB(255, 120, 120), 33)
@@ -329,6 +335,16 @@ UpdateInventory.OnClientEvent:Connect(function(inventory)
 	currentInventory = inventory
 	if backpackWindow.Visible then
 		renderInventory(currentTab)
+	end
+end)
+
+-- Живий відлік таймерів псування, поки вікно рюкзака відкрите
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if backpackWindow.Visible then
+			renderInventory(currentTab)
+		end
 	end
 end)
 
