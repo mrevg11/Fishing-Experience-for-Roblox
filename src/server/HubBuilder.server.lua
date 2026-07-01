@@ -122,11 +122,17 @@ end
 shopPrompt.Triggered:Connect(sellAllFish)
 
 -- ==============================
+-- МУЗЕЙ — сама точка тут, UI-логіку відкриття веде MuseumController
+-- (клієнт сам слухає ProximityPrompt.Triggered на цій точці)
+-- ==============================
+
+createHubPoint("Museum", Vector3.new(-120, 0, 0), Color3.fromRGB(60, 110, 220), "Open Museum")
+
+-- ==============================
 -- НЕГОТОВІ СИСТЕМИ — плейсхолдери з "Coming soon"
 -- ==============================
 
 local comingSoonPoints = {
-	{ name = "Museum",        offset = Vector3.new(-120, 0, 0), color = Color3.fromRGB(60, 110, 220) },
 	{ name = "Ice Vault",     offset = Vector3.new(-40, 0, 0),  color = Color3.fromRGB(120, 200, 220) },
 	{ name = "Warehouse",     offset = Vector3.new(40, 0, 0),   color = Color3.fromRGB(150, 110, 70) },
 	{ name = "Auction Board", offset = Vector3.new(120, 0, 0),  color = Color3.fromRGB(150, 60, 200) },

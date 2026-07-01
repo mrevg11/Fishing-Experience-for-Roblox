@@ -31,6 +31,8 @@ local Events = {
 	OpenInventory  = createRemoteEvent("OpenInventory"),
 	-- Музей
 	AddToMuseum    = createRemoteEvent("AddToMuseum"),
+	RequestMuseum  = createRemoteEvent("RequestMuseum"),
+	UpdateMuseum   = createRemoteEvent("UpdateMuseum"),
 	-- Аукціон
 	ListAuction    = createRemoteEvent("ListAuction"),
 	-- UI оновлення

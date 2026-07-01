@@ -12,6 +12,7 @@ local screenGui = playerGui:WaitForChild("MainGui")
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local UpdateInventory  = RemoteEvents:WaitForChild("UpdateInventory")
 local RequestInventory = RemoteEvents:WaitForChild("RequestInventory")
+local AddToMuseum      = RemoteEvents:WaitForChild("AddToMuseum")
 
 -- ==============================
 -- STATE
@@ -282,10 +283,22 @@ local function renderInventory(tab)
 				or Color3.fromRGB(120, 220, 80), 2)
 
 		local nameLabel = newLabel(slot, item.data.name,
-			UDim2.new(1, -4, 0.4, 0),
+			UDim2.new(1, -32, 0.4, 0),
 			UDim2.new(0, 2, 0, 5),
 			Color3.fromRGB(255, 255, 255), 33)
 		nameLabel.TextWrapped = true
+
+		if item.type == "fish" then
+			local donateBtn = newButton(
+				slot, "🏛️",
+				UDim2.new(0, 26, 0, 26),
+				UDim2.new(1, -30, 0, 4),
+				Color3.fromRGB(60, 110, 220), 34
+			)
+			donateBtn.MouseButton1Click:Connect(function()
+				AddToMuseum:FireServer(item.data.name, item.data.prefix)
+			end)
+		end
 
 		if item.type == "fish" and item.data.prefix then
 			newLabel(slot, "✨ " .. item.data.prefix,
