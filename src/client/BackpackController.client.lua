@@ -274,26 +274,38 @@ local function renderInventory(tab)
 	end
 
 	for i, item in ipairs(items) do
-		local slot = newFrame(
+		-- Зовнішня рамка-кольору-межі + трохи менший внутрішній фрейм з
+		-- основним кольором зверху — надійніше за UIStroke, яка на цих
+		-- слотах чомусь не промальовувалась рівномірно з усіх сторін
+		local borderColor = item.type == "fish"
+			and (rarityGlow[item.data.rarity] or Color3.fromRGB(255, 255, 255))
+			or Color3.fromRGB(120, 220, 80)
+
+		local cell = newFrame(
 			itemGrid,
 			UDim2.new(0, 130, 0, 130),
 			UDim2.new(0, 0, 0, 0),
+			borderColor, 0, 32
+		)
+		cell.Name = "Cell" .. i
+		addRound(cell, 12)
+
+		local slot = newFrame(
+			cell,
+			UDim2.new(1, -6, 1, -6),
+			UDim2.new(0, 3, 0, 3),
 			item.type == "fish"
 				and (rarityColors[item.data.rarity] or Color3.fromRGB(80, 80, 80))
 				or Color3.fromRGB(60, 100, 50),
-			0, 32
+			0, 33
 		)
 		slot.Name = "Slot" .. i
-		addRound(slot, 12)
-		addBorder(slot,
-			item.type == "fish"
-				and (rarityGlow[item.data.rarity] or Color3.fromRGB(255, 255, 255))
-				or Color3.fromRGB(120, 220, 80), 3)
+		addRound(slot, 10)
 
 		local nameLabel = newLabel(slot, item.data.name,
 			UDim2.new(1, -32, 0.4, 0),
 			UDim2.new(0, 2, 0, 5),
-			Color3.fromRGB(255, 255, 255), 33)
+			Color3.fromRGB(255, 255, 255), 34)
 		nameLabel.TextWrapped = true
 
 		if item.type == "fish" then
@@ -301,7 +313,7 @@ local function renderInventory(tab)
 				slot, "🏛️",
 				UDim2.new(0, 26, 0, 26),
 				UDim2.new(1, -30, 0, 4),
-				Color3.fromRGB(60, 110, 220), 34
+				Color3.fromRGB(60, 110, 220), 35
 			)
 			donateBtn.MouseButton1Click:Connect(function()
 				AddToMuseum:FireServer(item.data.name, item.data.prefix)
@@ -312,7 +324,7 @@ local function renderInventory(tab)
 			newLabel(slot, "✨ " .. item.data.prefix,
 				UDim2.new(1, 0, 0.2, 0),
 				UDim2.new(0, 0, 0.42, 0),
-				Color3.fromRGB(255, 230, 50), 33)
+				Color3.fromRGB(255, 230, 50), 34)
 		end
 
 		if item.type == "fish" then
@@ -320,14 +332,14 @@ local function renderInventory(tab)
 				newLabel(slot, "∞",
 					UDim2.new(1, 0, 0.22, 0),
 					UDim2.new(0, 0, 0.72, 0),
-					Color3.fromRGB(255, 215, 0), 33)
+					Color3.fromRGB(255, 215, 0), 34)
 			else
 				-- Реальний залишок часу до псування, а не повна тривалість
 				local remaining = math.max(0, item.data.spoilTimer - (os.time() - item.data.caughtAt))
 				newLabel(slot, "⏱ " .. formatCountdown(remaining),
 					UDim2.new(1, 0, 0.22, 0),
 					UDim2.new(0, 0, 0.72, 0),
-					Color3.fromRGB(255, 120, 120), 33)
+					Color3.fromRGB(255, 120, 120), 34)
 			end
 		end
 	end
