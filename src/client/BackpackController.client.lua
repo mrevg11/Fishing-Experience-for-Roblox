@@ -203,8 +203,8 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
-itemGrid.Size = UDim2.new(1, -35, 1, -145)
-itemGrid.Position = UDim2.new(0, 20, 0, 140)
+itemGrid.Size = UDim2.new(1, -35, 1, -205)
+itemGrid.Position = UDim2.new(0, 20, 0, 200)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
