@@ -11,6 +11,7 @@ local screenGui = playerGui:WaitForChild("MainGui")
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
+local UpdateWeather = RemoteEvents:WaitForChild("UpdateWeather")
 
 -- ==============================
 -- HELPERS
@@ -105,12 +106,33 @@ local weatherLabel = newLabel(
 	Color3.fromRGB(200, 240, 255), 6
 )
 
+local timeOfDayDisplay = {
+	morning = { icon = "🌅", text = "Morning" },
+	day     = { icon = "☀️", text = "Day" },
+	evening = { icon = "🌇", text = "Evening" },
+	night   = { icon = "🌙", text = "Night" },
+}
+
+local weatherDisplay = {
+	clear  = { icon = "☀️", text = "Clear" },
+	cloudy = { icon = "☁️", text = "Cloudy" },
+	rain   = { icon = "🌧️", text = "Rain" },
+	fog    = { icon = "🌫️", text = "Fog" },
+	storm  = { icon = "⛈️", text = "Storm" },
+}
+
 -- ==============================
 -- SERVER EVENTS
 -- ==============================
 
 UpdateCoins.OnClientEvent:Connect(function(coins)
 	coinsLabel.Text = "$ " .. tostring(coins)
+end)
+
+UpdateWeather.OnClientEvent:Connect(function(weather, timeOfDay)
+	local time = timeOfDayDisplay[timeOfDay] or timeOfDayDisplay.morning
+	local weatherInfo = weatherDisplay[weather] or weatherDisplay.clear
+	weatherLabel.Text = time.icon .. " " .. time.text .. " | " .. weatherInfo.icon .. " " .. weatherInfo.text
 end)
 
 print("[HudController] Initialized successfully!")

@@ -13,6 +13,7 @@ local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local CastRod = RemoteEvents:WaitForChild("CastRod")
 local CatchFish = RemoteEvents:WaitForChild("CatchFish")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
+local UpdateWeather = RemoteEvents:WaitForChild("UpdateWeather")
 
 -- ==============================
 -- FISH DATA
@@ -69,6 +70,10 @@ local weatherChances = {
 	{ weather = "storm",  chance = 5  },
 }
 
+local function broadcastWeather()
+	UpdateWeather:FireAllClients(currentWeather, currentTimeOfDay)
+end
+
 local function rollWeather()
 	local roll = math.random(1, 100)
 	local cumulative = 0
@@ -77,23 +82,25 @@ local function rollWeather()
 		if roll <= cumulative then
 			currentWeather = entry.weather
 			print("[FishingSystem] Погода змінилась: " .. currentWeather)
+			broadcastWeather()
 			return
 		end
 	end
 end
 
 local timeOfDaySchedule = {
-	{ phase = "morning", duration = 5 * 60 },
-	{ phase = "day",     duration = 7 * 60 },
-	{ phase = "evening", duration = 4 * 60 },
-	{ phase = "night",   duration = 4 * 60 },
+	{ phase = "morning", duration = 10 * 60 },
+	{ phase = "day",     duration = 20 * 60 },
+	{ phase = "evening", duration = 15 * 60 },
+	{ phase = "night",   duration = 15 * 60 },
 }
+
+local WEATHER_CHANGE_INTERVAL = 10 * 60
 
 -- Weather cycle
 task.spawn(function()
 	while true do
-		local waitTime = math.random(8, 12) * 60
-		task.wait(waitTime)
+		task.wait(WEATHER_CHANGE_INTERVAL)
 		rollWeather()
 	end
 end)
@@ -104,9 +111,15 @@ task.spawn(function()
 		for _, phase in ipairs(timeOfDaySchedule) do
 			currentTimeOfDay = phase.phase
 			print("[FishingSystem] Час доби: " .. currentTimeOfDay)
+			broadcastWeather()
 			task.wait(phase.duration)
 		end
 	end
+end)
+
+-- Надсилаємо новому гравцю поточний стан погоди/часу доби
+Players.PlayerAdded:Connect(function(player)
+	UpdateWeather:FireClient(player, currentWeather, currentTimeOfDay)
 end)
 
 -- ==============================

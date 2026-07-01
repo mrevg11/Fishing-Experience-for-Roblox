@@ -37,6 +37,7 @@ local Events = {
 	UpdateCoins    = createRemoteEvent("UpdateCoins"),
 	UpdateInventory = createRemoteEvent("UpdateInventory"),
 	UpdateRodLevel = createRemoteEvent("UpdateRodLevel"),
+	UpdateWeather  = createRemoteEvent("UpdateWeather"),
 }
 
 -- Запит інвентаря при відкритті рюкзака
