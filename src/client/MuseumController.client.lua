@@ -173,10 +173,16 @@ local closeBtn = newButton(
 	Color3.fromRGB(220, 40, 40), 33
 )
 
+local totalIncomeLabel = newLabel(
+	museumWindow, "💰 Passive income: 0.0 coins/min",
+	UDim2.new(1, -20, 0, 26), UDim2.new(0, 10, 0, 63),
+	Color3.fromRGB(255, 215, 0), 32
+)
+
 local list = Instance.new("ScrollingFrame")
 list.Name = "SpeciesList"
-list.Size = UDim2.new(1, -20, 1, -70)
-list.Position = UDim2.new(0, 10, 0, 63)
+list.Size = UDim2.new(1, -20, 1, -100)
+list.Position = UDim2.new(0, 10, 0, 92)
 list.BackgroundTransparency = 1
 list.BorderSizePixel = 0
 list.ScrollBarThickness = 6
@@ -192,7 +198,7 @@ listLayout.Parent = list
 -- RENDERING
 -- ==============================
 
-local currentMuseum = { fish = {} }
+local currentMuseum = { fish = {}, incomeBySpecies = {}, totalIncomePerMinute = 0 }
 
 local function clearList()
 	for _, child in ipairs(list:GetChildren()) do
@@ -209,6 +215,11 @@ local function renderMuseum()
 	for _, specimen in ipairs(currentMuseum.fish or {}) do
 		countByName[specimen.name] = (countByName[specimen.name] or 0) + 1
 	end
+	local incomeBySpecies = currentMuseum.incomeBySpecies or {}
+
+	totalIncomeLabel.Text = string.format(
+		"💰 Passive income: %.1f coins/min", currentMuseum.totalIncomePerMinute or 0
+	)
 
 	local order = 0
 	for zone = 1, 2 do
@@ -226,6 +237,7 @@ local function renderMuseum()
 				order = order + 1
 				local count = countByName[species.name] or 0
 				local cap = rarityCaps[species.rarity] or 1
+				local income = incomeBySpecies[species.name] or 0
 
 				local row = newFrame(
 					list, UDim2.new(1, 0, 0, 34), UDim2.new(0, 0, 0, 0),
@@ -235,12 +247,16 @@ local function renderMuseum()
 				addRound(row, 8)
 
 				newLabel(row, species.name,
-					UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0),
+					UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 10, 0, 0),
 					Color3.fromRGB(255, 255, 255), 33)
 
 				newLabel(row, count .. " / " .. cap,
-					UDim2.new(0.3, -10, 1, 0), UDim2.new(0.7, 0, 0, 0),
+					UDim2.new(0.2, 0, 1, 0), UDim2.new(0.5, 0, 0, 0),
 					count >= cap and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(220, 220, 220), 33)
+
+				newLabel(row, count > 0 and string.format("+%.1f/min", income) or "—",
+					UDim2.new(0.3, -10, 1, 0), UDim2.new(0.7, 0, 0, 0),
+					Color3.fromRGB(150, 255, 150), 33)
 			end
 		end
 	end

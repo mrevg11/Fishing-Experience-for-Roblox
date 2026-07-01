@@ -241,9 +241,12 @@ local function catchFish(player, barResult, inFishingSpot, zone)
 	local fishInfo = FishData[fishName]
 	local prefix, prefixBonus = rollPrefix(barResult)
 
+	-- Використовуємо РЕАЛЬНУ рідкість спійманої риби, а не ту, що випала
+	-- в rollRarity — getRandomFishByRarity міг підмінити її на Common,
+	-- якщо для випавшої рідкості не знайшлось риби за поточних умов
 	local caughtFish = {
 		name = fishName,
-		rarity = rarity,
+		rarity = fishInfo.rarity,
 		prefix = prefix,
 		prefixBonus = prefixBonus,
 		spoilTimer = fishInfo.spoilTime,
@@ -255,7 +258,7 @@ local function catchFish(player, barResult, inFishingSpot, zone)
 		table.insert(data.inventory.fish, caughtFish)
 		print("[FishingSystem] " .. player.Name .. " спіймав: "
 			.. (prefix and prefix .. " " or "") .. fishName
-			.. " (" .. rarity .. ")")
+			.. " (" .. fishInfo.rarity .. ")")
 		CatchFish:FireClient(player, caughtFish)
 		UpdateInventory:FireClient(player, data.inventory)
 	else

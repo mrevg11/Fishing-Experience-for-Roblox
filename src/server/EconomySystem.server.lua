@@ -11,7 +11,6 @@ local EconomyUtils = require(ServerScriptService.EconomyUtils)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local SellFish = RemoteEvents:WaitForChild("SellFish")
-local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
 
 -- ==============================
@@ -45,7 +44,6 @@ SellFish.OnServerEvent:Connect(function(player, fishName, prefix)
 
 	-- Add coins
 	EconomyUtils.addCoins(player, price)
-	UpdateCoins:FireClient(player, data.coins)
 
 	-- Update client inventory
 	UpdateInventory:FireClient(player, data.inventory)

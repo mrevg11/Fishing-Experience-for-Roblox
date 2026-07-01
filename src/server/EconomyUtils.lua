@@ -3,9 +3,13 @@
 -- (продаж однієї риби) і HubBuilder (NPC-магазин, продаж усього рюкзака)
 
 local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DataManager = require(ServerScriptService.DataManager)
 local FishData = require(ServerScriptService.FishData)
+
+local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 
 local EconomyUtils = {}
 
@@ -31,11 +35,14 @@ function EconomyUtils.calculatePrice(fish)
 	return math.floor(fishInfo.basePrice * multiplier)
 end
 
+-- Завжди оновлює баланс і одразу ж рефрешить HUD клієнта —
+-- жоден виклик не може "забути" це зробити
 function EconomyUtils.addCoins(player, amount)
 	local data = DataManager.getData(player)
 	if not data then return end
 
 	data.coins = data.coins + amount
+	UpdateCoins:FireClient(player, data.coins)
 	print("[EconomyUtils] " .. player.Name .. " отримав " .. amount .. " монет. Всього: " .. data.coins)
 end
 
@@ -48,6 +55,7 @@ function EconomyUtils.removeCoins(player, amount)
 	end
 
 	data.coins = data.coins - amount
+	UpdateCoins:FireClient(player, data.coins)
 	print("[EconomyUtils] " .. player.Name .. " витратив " .. amount .. " монет. Залишок: " .. data.coins)
 	return true
 end

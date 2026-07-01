@@ -15,7 +15,6 @@ local AddToMuseum = RemoteEvents:WaitForChild("AddToMuseum")
 local RequestMuseum = RemoteEvents:WaitForChild("RequestMuseum")
 local UpdateMuseum = RemoteEvents:WaitForChild("UpdateMuseum")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
-local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 local ShowNotification = RemoteEvents:WaitForChild("ShowNotification")
 
 -- ==============================
@@ -109,6 +108,34 @@ local function getIncomeRate(specimen, collectionBonus)
 	return fishInfo.museumIncome * prefixMult * (1 + collectionBonus)
 end
 
+-- Пакує дані музею + прибуток/хв на вид і загалом, для показу в MuseumController
+local function buildMuseumPayload(data)
+	ensureMuseumShape(data)
+	local museumFish = data.museum.fish
+
+	local zoneBonus = {
+		[1] = getCollectionBonus(1, museumFish),
+		[2] = getCollectionBonus(2, museumFish),
+	}
+
+	local incomeBySpecies = {}
+	local totalIncomePerMinute = 0
+	for _, specimen in ipairs(museumFish) do
+		local fishInfo = FishData[specimen.name]
+		if fishInfo then
+			local rate = getIncomeRate(specimen, zoneBonus[fishInfo.zone] or 0)
+			incomeBySpecies[specimen.name] = (incomeBySpecies[specimen.name] or 0) + rate
+			totalIncomePerMinute = totalIncomePerMinute + rate
+		end
+	end
+
+	return {
+		fish = museumFish,
+		incomeBySpecies = incomeBySpecies,
+		totalIncomePerMinute = totalIncomePerMinute,
+	}
+end
+
 -- ==============================
 -- OFFLINE PASSIVE INCOME (F3)
 -- ==============================
@@ -137,7 +164,6 @@ local function payOfflineIncome(player, data)
 	total = math.floor(total)
 	if total > 0 then
 		EconomyUtils.addCoins(player, total)
-		UpdateCoins:FireClient(player, data.coins)
 		notify(player, "🏛️ While you were away, the museum earned " .. total .. " coins!",
 			Color3.fromRGB(255, 215, 0), Color3.fromRGB(200, 150, 0))
 	end
@@ -190,7 +216,7 @@ AddToMuseum.OnServerEvent:Connect(function(player, fishName, prefix)
 			rarity = fish.rarity,
 		})
 		UpdateInventory:FireClient(player, data.inventory)
-		UpdateMuseum:FireClient(player, data.museum)
+		UpdateMuseum:FireClient(player, buildMuseumPayload(data))
 	end
 
 	if sameSpeciesCount < cap then
@@ -220,8 +246,7 @@ end)
 RequestMuseum.OnServerEvent:Connect(function(player)
 	local data = DataManager.getData(player)
 	if not data then return end
-	ensureMuseumShape(data)
-	UpdateMuseum:FireClient(player, data.museum)
+	UpdateMuseum:FireClient(player, buildMuseumPayload(data))
 end)
 
 print("[MuseumSystem] Ініціалізовано успішно!")

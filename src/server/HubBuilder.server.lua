@@ -12,7 +12,6 @@ local DataManager = require(ServerScriptService.DataManager)
 local EconomyUtils = require(ServerScriptService.EconomyUtils)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
 local ShowNotification = RemoteEvents:WaitForChild("ShowNotification")
 
@@ -113,7 +112,6 @@ local function sellAllFish(player)
 	data.inventory.fish = {}
 	EconomyUtils.addCoins(player, total)
 
-	UpdateCoins:FireClient(player, data.coins)
 	UpdateInventory:FireClient(player, data.inventory)
 	notify(player, "💰 Sold all fish for " .. total .. " coins!",
 		Color3.fromRGB(255, 215, 0), Color3.fromRGB(200, 150, 0))

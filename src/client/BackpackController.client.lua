@@ -203,8 +203,8 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
-itemGrid.Size = UDim2.new(1, -20, 1, -115)
-itemGrid.Position = UDim2.new(0, 10, 0, 110)
+itemGrid.Size = UDim2.new(1, -20, 1, -125)
+itemGrid.Position = UDim2.new(0, 10, 0, 120)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
@@ -215,7 +215,8 @@ local gridLayout = Instance.new("UIGridLayout")
 gridLayout.CellSize = UDim2.new(0, 130, 0, 130)
 gridLayout.CellPadding = UDim2.new(0, 15, 0, 15)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.FillDirection = Enum.FillDirection.Horizontal
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 gridLayout.Parent = itemGrid
 
 -- ==============================
