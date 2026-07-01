@@ -156,6 +156,11 @@ D:\FishingExperience\
 - Множники бару: weak=0.5, medium=1.0, good=1.5, perfect=2.0
 - Обробка CastRod.OnServerEvent → catchFish()
 - Перевірка місткості рюкзака: 10 + (backpackLevel-1)*5 слотів
+- caughtFish.rarity ЗАВЖДИ береться з FishData[fishName].rarity, а не з
+  рідкості, яку видав rollRarity — getRandomFishByRarity може підмінити
+  вид на Common, якщо для випавшої рідкості немає риби за умовами (день/
+  ніч/погода); раніше це давало "Legendary Pond Lurker" (Common риба з
+  ярликом Legendary) — виправлено
 
 #### FishData.lua (ModuleScript)
 - Таблиця риби (30 видів) винесена сюди з FishingSystem — раніше була
@@ -165,9 +170,12 @@ D:\FishingExperience\
 
 #### EconomyUtils.lua (ModuleScript)
 - calculatePrice(fish), addCoins(player, amount), removeCoins(player, amount)
-- Спільна логіка для EconomySystem (продаж 1 риби) і HubBuilder (продаж усього рюкзака)
+- Спільна логіка для EconomySystem (продаж 1 риби), HubBuilder (продаж усього
+  рюкзака) і MuseumSystem (офлайн дохід)
 - Ціна продажу = basePrice (з FishData) × (1 + бонус префікса). Погода/час доби
   НЕ впливають на ціну продажу (свідоме рішення розробника)
+- addCoins/removeCoins САМІ викликають UpdateCoins:FireClient — жоден виклик
+  не може забути оновити HUD (раніше кожен call-site мусив пам'ятати про це)
 
 #### EconomySystem.server.lua (Script)
 - Обробка SellFish.OnServerEvent → продаж однієї риби з інвентаря (через EconomyUtils)
@@ -177,6 +185,9 @@ D:\FishingExperience\
 - Ліміти екземплярів по рідкості (D3): Common 6, Uncommon 5, Rare 4, Epic 3, Legendary 2
 - Якщо вид уже заповнений — заміна найслабшого екземпляра (за prefixBonus),
   якщо новий кращий; інакше донат відхиляється. Стара риба НЕ повертається в рюкзак
+- UpdateMuseum передає не лише сирий список екземплярів, а й
+  incomeBySpecies (дохід/хв на вид) і totalIncomePerMinute — для показу
+  в MuseumController без дублювання формули на клієнті
 - Офлайн пасивний дохід (F3) — рахується один раз при вході:
   minutesOffline (кап 2880=48год) × museumIncome кожного екземпляра ×
   (1+бонус префікса) × (1+бонус колекції зони: +30% якщо є хоч 1 кожного
@@ -230,6 +241,9 @@ D:\FishingExperience\
   - Rare: RGB(30,80,200), Epic: RGB(130,30,200), Legendary: RGB(200,130,0)
 - Підписка на UpdateInventory.OnClientEvent
 - При відкритті: RequestInventory:FireServer()
+- Кнопка "🏛️" на кожному слоті риби → AddToMuseum:FireServer(name, prefix)
+- Сітка: UIGridLayout HorizontalAlignment=Left (було Center — рядки з
+  меншою кількістю плиток центрувались замість заповнення зліва направо)
 - TEXT_SIZE = 22
 
 #### FishingController.client.lua (LocalScript)
@@ -269,7 +283,10 @@ D:\FishingExperience\
 
 #### MuseumController.client.lua (LocalScript)
 - Вікно перегляду колекції (650x550, по центру), список видів
-  згрупований по зонах, кожен рядок "Назва   count/cap"
+  згрупований по зонах, кожен рядок "Назва   count/cap   +X.X/min"
+- Підсумковий рядок під шапкою: "💰 Passive income: X.X coins/min"
+- Дохід береться з UpdateMuseum-пейлоаду (incomeBySpecies/totalIncomePerMinute),
+  формула не дублюється на клієнті
 - Дублює зону/рідкість риби локально (speciesTemplate) — клієнт не
   має доступу до FishData (лежить у ServerScriptService)
 - Відкривається через той самий ProximityPrompt, що створив
