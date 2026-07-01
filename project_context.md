@@ -111,8 +111,11 @@ D:\FishingExperience\
   - CastRod, CatchFish, SellFish, OpenInventory
   - AddToMuseum, ListAuction
   - UpdateCoins, UpdateInventory, UpdateRodLevel, UpdateWeather
-  - RequestInventory
-- При вході гравця: завантажує дані, надсилає UpdateCoins і UpdateRodLevel клієнту
+  - RequestInventory, RequestPlayerState
+- Coins/rodLevel більше НЕ пушаться наосліп через task.wait(0.5) —
+  клієнт сам робить RequestPlayerState:FireServer() коли його
+  listener'и вже підписані; сервер чекає (waitForData, до 5с) поки
+  DataManager завантажить дані, і лише тоді відповідає
 - При виході: зберігає дані через DataManager
 - Обробляє RequestInventory — надсилає інвентар клієнту
 
@@ -146,7 +149,8 @@ D:\FishingExperience\
 - Вся логіка розділена по окремих контролерах
 
 #### HudController.client.lua (LocalScript)
-- Відображення монет (зліва зверху, 220x55, жовта рамка)
+- Відображення монет (зліва зверху, 220x55, жовта рамка, плейсхолдер "$ 0" —
+  емодзі 🪙 не рендерилось шрифтом Roblox, замінено на "$")
 - Бар погоди/часу доби (по центру зверху, 480x55, блакитна рамка),
   симетрично розділений вертикальним роздільником навпіл:
   - Ліва половина — фаза доби + власний таймер зворотного відліку
@@ -155,6 +159,8 @@ D:\FishingExperience\
     (UpdateWeather передає weatherSecondsLeft і phaseSecondsLeft,
     сервер рахує їх від os.clock()-міток weatherNextChangeAt/phaseNextChangeAt)
 - Підписка на UpdateCoins.OnClientEvent, UpdateWeather.OnClientEvent
+- При завантаженні: RequestPlayerState:FireServer() (після підписки на
+  UpdateCoins) — усуває гонку умов зі старим одноразовим server push
 - TEXT_SIZE = 22, TextScaled = false
 - Чорна обводка тексту (TextStrokeColor3, TextStrokeTransparency = 0)
 
@@ -176,6 +182,8 @@ D:\FishingExperience\
 - Підписка на UpdateRodLevel.OnClientEvent — rodLevel реально впливає на:
   - час очікування закидання (rodWaitTimes[rodLevel], 8-12с → 1-3с)
   - розмір "Ideal" зони бару (8%→23%) і швидкість повзунка (0.85→1.60)
+- При завантаженні: RequestPlayerState:FireServer() (після підписки на
+  UpdateRodLevel) — той самий фікс гонки умов, що й у HudController
 - Повний цикл рибалки:
   1. Cast Rod → очікування (залежить від rodLevel)
   2. Pull! → 5 секунд щоб натиснути
