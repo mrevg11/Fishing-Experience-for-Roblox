@@ -7,6 +7,12 @@
       "DataManager": {
         "$path": "src/server/DataManager.lua"
       },
+      "FishData": {
+        "$path": "src/server/FishData.lua"
+      },
+      "EconomyUtils": {
+        "$path": "src/server/EconomyUtils.lua"
+      },
       "GameManager": {
         "$path": "src/server/GameManager.server.lua"
       },
@@ -15,6 +21,9 @@
       },
       "EconomySystem": {
         "$path": "src/server/EconomySystem.server.lua"
+      },
+      "HubBuilder": {
+        "$path": "src/server/HubBuilder.server.lua"
       }
     },
     "StarterGui": {

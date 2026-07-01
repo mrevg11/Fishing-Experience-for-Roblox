@@ -144,6 +144,7 @@ end
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local FishSpoiled = RemoteEvents:WaitForChild("FishSpoiled")
+local ShowNotification = RemoteEvents:WaitForChild("ShowNotification")
 
 task.delay(2, function()
 	NotificationController.show(
@@ -159,6 +160,11 @@ FishSpoiled.OnClientEvent:Connect(function(count)
 		Color3.fromRGB(255, 120, 120),
 		Color3.fromRGB(200, 50, 50)
 	)
+end)
+
+-- Дозволяє сервер-скриптам (HubBuilder тощо) показувати тости гравцю
+ShowNotification.OnClientEvent:Connect(function(text, color, borderColor)
+	NotificationController.show(text, color, borderColor)
 end)
 
 print("[NotificationController] Initialized successfully!")

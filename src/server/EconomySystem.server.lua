@@ -7,63 +7,12 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DataManager = require(ServerScriptService.DataManager)
+local EconomyUtils = require(ServerScriptService.EconomyUtils)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local SellFish = RemoteEvents:WaitForChild("SellFish")
 local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
-
--- ==============================
--- PRICE CALCULATION
--- ==============================
-
--- Ціна продажу стала за будь-якої погоди/часу доби.
--- Єдиний бонус — префікс, яким риба вже позначена в момент лову.
-local prefixBonuses = {
-	Rainy    = 0.10,
-	Dusk     = 0.15,
-	Midnight = 0.20,
-	Stormy   = 0.35,
-	Misty    = 0.35,
-}
-
-local function calculatePrice(fish)
-	local basePrice = fish.basePrice
-	local multiplier = 1.0
-
-	if fish.prefix and prefixBonuses[fish.prefix] then
-		multiplier = multiplier + prefixBonuses[fish.prefix]
-	end
-
-	return math.floor(basePrice * multiplier)
-end
-
--- ==============================
--- COINS MANAGEMENT
--- ==============================
-
-local function addCoins(player, amount)
-	local data = DataManager.getData(player)
-	if not data then return end
-
-	data.coins = data.coins + amount
-	UpdateCoins:FireClient(player, data.coins)
-	print("[EconomySystem] " .. player.Name .. " отримав " .. amount .. " монет. Всього: " .. data.coins)
-end
-
-local function removeCoins(player, amount)
-	local data = DataManager.getData(player)
-	if not data then return false end
-
-	if data.coins < amount then
-		return false
-	end
-
-	data.coins = data.coins - amount
-	UpdateCoins:FireClient(player, data.coins)
-	print("[EconomySystem] " .. player.Name .. " витратив " .. amount .. " монет. Залишок: " .. data.coins)
-	return true
-end
 
 -- ==============================
 -- SELL FISH TO NPC
@@ -89,13 +38,14 @@ SellFish.OnServerEvent:Connect(function(player, fishName, prefix)
 		return
 	end
 
-	local price = calculatePrice(fish)
+	local price = EconomyUtils.calculatePrice(fish)
 
 	-- Remove fish from inventory
 	table.remove(data.inventory.fish, index)
 
 	-- Add coins
-	addCoins(player, price)
+	EconomyUtils.addCoins(player, price)
+	UpdateCoins:FireClient(player, data.coins)
 
 	-- Update client inventory
 	UpdateInventory:FireClient(player, data.inventory)
@@ -105,25 +55,4 @@ SellFish.OnServerEvent:Connect(function(player, fishName, prefix)
 		" за " .. price .. " монет")
 end)
 
--- ==============================
--- PUBLIC API
--- ==============================
-
-local EconomySystem = {}
-
-function EconomySystem.addCoins(player, amount)
-	addCoins(player, amount)
-end
-
-function EconomySystem.removeCoins(player, amount)
-	return removeCoins(player, amount)
-end
-
-function EconomySystem.calculatePrice(fish)
-	return calculatePrice(fish)
-end
-
 print("[EconomySystem] Ініціалізовано успішно!")
-
-return EconomySystem
-
