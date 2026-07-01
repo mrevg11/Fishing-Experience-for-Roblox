@@ -14,6 +14,7 @@ local CastRod = RemoteEvents:WaitForChild("CastRod")
 local CatchFish = RemoteEvents:WaitForChild("CatchFish")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
 local UpdateWeather = RemoteEvents:WaitForChild("UpdateWeather")
+local FishSpoiled = RemoteEvents:WaitForChild("FishSpoiled")
 
 -- ==============================
 -- FISH DATA
@@ -301,6 +302,57 @@ local function catchFish(player, barResult, inFishingSpot, zone)
 		CatchFish:FireClient(player, nil, "full")
 	end
 end
+
+-- ==============================
+-- FISH SPOILAGE (D2/F3)
+-- ==============================
+
+local SPOIL_CHECK_INTERVAL = 30 -- секунд
+
+-- Прибирає протухлу рибу з рюкзака (spoilTimer рахується від caughtAt,
+-- тому час офлайн враховується автоматично — окрема логіка для входу не потрібна)
+local function removeSpoiledFish(data)
+	local removed = 0
+	local i = 1
+	while i <= #data.inventory.fish do
+		local fish = data.inventory.fish[i]
+		if fish.spoilTimer ~= math.huge and (os.time() - fish.caughtAt) >= fish.spoilTimer then
+			table.remove(data.inventory.fish, i)
+			removed = removed + 1
+		else
+			i = i + 1
+		end
+	end
+	return removed
+end
+
+local function checkPlayerSpoilage(player)
+	local data = DataManager.getData(player)
+	if not data then return end
+
+	local removed = removeSpoiledFish(data)
+	if removed > 0 then
+		print("[FishingSystem] Протухло риби в " .. player.Name .. ": " .. removed)
+		UpdateInventory:FireClient(player, data.inventory)
+		FishSpoiled:FireClient(player, removed)
+	end
+end
+
+-- Періодична перевірка всіх активних гравців
+task.spawn(function()
+	while true do
+		task.wait(SPOIL_CHECK_INTERVAL)
+		for _, player in ipairs(Players:GetPlayers()) do
+			checkPlayerSpoilage(player)
+		end
+	end
+end)
+
+-- Одразу перевіряємо при вході (риба могла протухнути, поки гравця не було)
+Players.PlayerAdded:Connect(function(player)
+	task.wait(1) -- даємо DataManager час завантажити дані
+	checkPlayerSpoilage(player)
+end)
 
 -- ==============================
 -- CLIENT EVENT HANDLERS

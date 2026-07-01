@@ -143,12 +143,21 @@ end
 -- ==============================
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local FishSpoiled = RemoteEvents:WaitForChild("FishSpoiled")
 
 task.delay(2, function()
 	NotificationController.show(
 		"🎣 Welcome to Fishing Experience!",
 		Color3.fromRGB(100, 220, 255),
 		Color3.fromRGB(0, 180, 255)
+	)
+end)
+
+FishSpoiled.OnClientEvent:Connect(function(count)
+	NotificationController.show(
+		"🐟💀 " .. count .. " fish spoiled in your backpack!",
+		Color3.fromRGB(255, 120, 120),
+		Color3.fromRGB(200, 50, 50)
 	)
 end)
 

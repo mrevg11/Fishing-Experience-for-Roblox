@@ -38,6 +38,7 @@ local Events = {
 	UpdateInventory = createRemoteEvent("UpdateInventory"),
 	UpdateRodLevel = createRemoteEvent("UpdateRodLevel"),
 	UpdateWeather  = createRemoteEvent("UpdateWeather"),
+	FishSpoiled    = createRemoteEvent("FishSpoiled"),
 }
 
 -- Чекаємо, поки DataManager завантажить дані гравця (DataStore-запит асинхронний)

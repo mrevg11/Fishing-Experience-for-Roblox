@@ -293,7 +293,9 @@ local function renderInventory(tab)
 					UDim2.new(0, 0, 0.72, 0),
 					Color3.fromRGB(255, 215, 0), 33)
 			else
-				local mins = math.floor(item.data.spoilTimer / 60)
+				-- Реальний залишок часу до псування, а не повна тривалість
+				local remaining = math.max(0, item.data.spoilTimer - (os.time() - item.data.caughtAt))
+				local mins = math.floor(remaining / 60)
 				newLabel(slot, "⏱ " .. mins .. "m",
 					UDim2.new(1, 0, 0.22, 0),
 					UDim2.new(0, 0, 0.72, 0),
