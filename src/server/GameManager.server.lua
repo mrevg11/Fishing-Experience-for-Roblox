@@ -40,6 +40,18 @@ local Events = {
 	UpdateWeather  = createRemoteEvent("UpdateWeather"),
 }
 
+-- Чекаємо, поки DataManager завантажить дані гравця (DataStore-запит асинхронний)
+local function waitForData(player)
+	local data = DataManager.getData(player)
+	local attempts = 0
+	while not data and attempts < 20 do
+		task.wait(0.25)
+		data = DataManager.getData(player)
+		attempts = attempts + 1
+	end
+	return data
+end
+
 -- Запит інвентаря при відкритті рюкзака
 local RequestInventory = createRemoteEvent("RequestInventory")
 
@@ -50,25 +62,22 @@ RequestInventory.OnServerEvent:Connect(function(player)
 	RemoteEvents.UpdateCoins:FireClient(player, data.coins)
 end)
 
--- Гравець зайшов
-Players.PlayerAdded:Connect(function(player)
-	print("[GameManager] Гравець зайшов: " .. player.Name)
+-- Клієнт сам запитує свій стан при завантаженні (замість гри в вгадування таймінгу)
+local RequestPlayerState = createRemoteEvent("RequestPlayerState")
 
-	-- Чекаємо поки DataManager завантажить дані
-	task.wait(0.5)
-
-	local data = DataManager.getData(player)
+RequestPlayerState.OnServerEvent:Connect(function(player)
+	local data = waitForData(player)
 	if not data then
 		warn("[GameManager] Дані не знайдено для: " .. player.Name)
 		return
 	end
-
-	print("[GameManager] Монети гравця: " .. data.coins)
-	print("[GameManager] Рівень вудки: " .. data.rodLevel)
-
-	-- Надсилаємо гравцю його монети та рівень вудки для UI
 	Events.UpdateCoins:FireClient(player, data.coins)
 	Events.UpdateRodLevel:FireClient(player, data.rodLevel)
+end)
+
+-- Гравець зайшов
+Players.PlayerAdded:Connect(function(player)
+	print("[GameManager] Гравець зайшов: " .. player.Name)
 end)
 
 -- Гравець вийшов

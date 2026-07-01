@@ -12,9 +12,10 @@ local playerGui = player.PlayerGui
 local screenGui = playerGui:WaitForChild("MainGui")
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-local CastRod       = RemoteEvents:WaitForChild("CastRod")
-local CatchFish     = RemoteEvents:WaitForChild("CatchFish")
-local UpdateRodLevel = RemoteEvents:WaitForChild("UpdateRodLevel")
+local CastRod            = RemoteEvents:WaitForChild("CastRod")
+local CatchFish          = RemoteEvents:WaitForChild("CatchFish")
+local UpdateRodLevel     = RemoteEvents:WaitForChild("UpdateRodLevel")
+local RequestPlayerState = RemoteEvents:WaitForChild("RequestPlayerState")
 
 -- ==============================
 -- STATE
@@ -220,6 +221,9 @@ local function applyRodLevel(level)
 end
 
 UpdateRodLevel.OnClientEvent:Connect(applyRodLevel)
+
+-- Слухач уже підписаний вище — тепер безпечно запитати актуальний rodLevel
+RequestPlayerState:FireServer()
 
 -- ==============================
 -- CATCH NOTIFICATION

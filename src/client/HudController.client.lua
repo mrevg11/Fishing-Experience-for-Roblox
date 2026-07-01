@@ -12,6 +12,7 @@ local screenGui = playerGui:WaitForChild("MainGui")
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local UpdateCoins = RemoteEvents:WaitForChild("UpdateCoins")
 local UpdateWeather = RemoteEvents:WaitForChild("UpdateWeather")
+local RequestPlayerState = RemoteEvents:WaitForChild("RequestPlayerState")
 
 -- ==============================
 -- HELPERS
@@ -80,7 +81,7 @@ addRound(coinsFrame, 14)
 addBorder(coinsFrame, Color3.fromRGB(255, 215, 0), 3)
 
 local coinsLabel = newLabel(
-	coinsFrame, "🪙 0",
+	coinsFrame, "$ 0",
 	UDim2.new(1, 0, 1, 0),
 	UDim2.new(0, 0, 0, 0),
 	Color3.fromRGB(255, 215, 0), 6
@@ -186,5 +187,9 @@ task.spawn(function()
 		refreshLabels()
 	end
 end)
+
+-- Запитуємо свій стан (монети, рівень вудки) — слухач уже підписаний вище,
+-- тож гонки умов з одноразовим сервер-пушем більше немає
+RequestPlayerState:FireServer()
 
 print("[HudController] Initialized successfully!")
