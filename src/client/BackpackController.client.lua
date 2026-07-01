@@ -203,10 +203,12 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
--- Ті самі відступи, що й у tabFrame (10px з обох боків) — тоді вкладки,
--- заголовок і сітка вирівняні по одному й тому ж лівому/правому краю
-itemGrid.Size = UDim2.new(1, -20, 1, -145)
-itemGrid.Position = UDim2.new(0, 10, 0, 130)
+-- ScrollingFrame майже на всю ширину вікна (скролбар біля справжнього
+-- краю), а блок плиток (565px під 4 колонки) центрується всередині
+-- через UIPadding нижче — рахунок такий, щоб margin зліва/справа
+-- відносно ВСЬОГО вікна (не itemGrid) виходив однаковим
+itemGrid.Size = UDim2.new(1, -10, 1, -145)
+itemGrid.Position = UDim2.new(0, 5, 0, 130)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
@@ -221,8 +223,12 @@ gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 gridLayout.Parent = itemGrid
 
+-- (650 - 565) / 2 - 5 ≈ 38/37 — центрує блок відносно вікна (650px),
+-- а не відносно itemGrid, який навмисно ширший заради скролбару
 local gridPadding = Instance.new("UIPadding")
 gridPadding.PaddingTop = UDim.new(0, 4)
+gridPadding.PaddingLeft = UDim.new(0, 38)
+gridPadding.PaddingRight = UDim.new(0, 37)
 gridPadding.Parent = itemGrid
 
 -- Окремий напис "порожньо" — НЕ дочірній itemGrid, бо UIGridLayout
