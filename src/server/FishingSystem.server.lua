@@ -145,7 +145,7 @@ end
 
 local function isConditionMet(condition)
 	if condition == "anytime" then return true end
-	if condition == "day" and (currentTimeOfDay == "day" or currentTimeOfDay == "morning") then return true end
+	if condition == "day" and currentTimeOfDay == "day" then return true end
 	if condition == "night" and currentTimeOfDay == "night" then return true end
 	if condition == "fog" and currentWeather == "fog" then return true end
 	if condition == "storm" and currentWeather == "storm" then return true end
@@ -194,7 +194,7 @@ local function getRandomFishByRarity(rarity, zone)
 	return candidates[math.random(1, #candidates)]
 end
 
-local function rollPrefix()
+local function rollPrefix(barResult)
 	local prefixChances = {
 		{ condition = "rain",    prefix = "Rainy",    bonus = 0.10, chance = 15 },
 		{ condition = "evening", prefix = "Dusk",     bonus = 0.15, chance = 10 },
@@ -213,8 +213,10 @@ local function rollPrefix()
 	if #active == 0 then return nil, 0 end
 
 	local chosen = active[math.random(1, #active)]
+	-- C3: ідеальний хіт бару (🔵 perfect) → +5% до шансу префікса
+	local chance = chosen.chance + (barResult == "perfect" and 5 or 0)
 	local roll = math.random(1, 100)
-	if roll <= chosen.chance then
+	if roll <= chance then
 		return chosen.prefix, chosen.bonus
 	end
 
@@ -246,7 +248,7 @@ local function catchFish(player, barResult, inFishingSpot, zone)
 	end
 
 	local fishInfo = FishData[fishName]
-	local prefix, prefixBonus = rollPrefix()
+	local prefix, prefixBonus = rollPrefix(barResult)
 
 	local caughtFish = {
 		name = fishName,
