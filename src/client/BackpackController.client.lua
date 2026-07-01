@@ -203,11 +203,10 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
--- Сам ScrollingFrame — майже на всю ширину вікна, щоб скролбар був
--- біля справжнього правого краю. Центрування блоку плиток робимо
--- через UIPadding нижче, а не через розмір цього фрейма
-itemGrid.Size = UDim2.new(1, -30, 1, -145)
-itemGrid.Position = UDim2.new(0, 20, 0, 130)
+-- Ті самі відступи, що й у tabFrame (10px з обох боків) — тоді вкладки,
+-- заголовок і сітка вирівняні по одному й тому ж лівому/правому краю
+itemGrid.Size = UDim2.new(1, -20, 1, -145)
+itemGrid.Position = UDim2.new(0, 10, 0, 130)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
@@ -222,13 +221,8 @@ gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 gridLayout.Parent = itemGrid
 
--- Центруємо блок плиток (4 колонки = 565px) усередині ширшого itemGrid
--- відступами, а не розміром самого ScrollingFrame — тоді скролбар
--- лишається біля справжнього правого краю вікна
 local gridPadding = Instance.new("UIPadding")
 gridPadding.PaddingTop = UDim.new(0, 4)
-gridPadding.PaddingLeft = UDim.new(0, 28)
-gridPadding.PaddingRight = UDim.new(0, 27)
 gridPadding.Parent = itemGrid
 
 -- Окремий напис "порожньо" — НЕ дочірній itemGrid, бо UIGridLayout
@@ -236,8 +230,8 @@ gridPadding.Parent = itemGrid
 local emptyLabel = newLabel(
 	backpackWindow,
 	"Nothing here yet! 🎣",
-	UDim2.new(1, -40, 0, 50),
-	UDim2.new(0, 20, 0, 140),
+	UDim2.new(1, -20, 0, 50),
+	UDim2.new(0, 10, 0, 140),
 	Color3.fromRGB(180, 180, 180), 32
 )
 emptyLabel.TextXAlignment = Enum.TextXAlignment.Center
