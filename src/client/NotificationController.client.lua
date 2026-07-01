@@ -73,19 +73,23 @@ local NOTIF_DURATION = 3
 
 local notifFrame = newFrame(
 	screenGui,
-	UDim2.new(0, 380, 0, 70),
+	UDim2.new(0, 380, 0, 90),
 	UDim2.new(0.5, -190, 0, -200),
 	Color3.fromRGB(20, 20, 20), 0.1, 50
 )
 addRound(notifFrame, 14)
 addBorder(notifFrame, Color3.fromRGB(255, 255, 255), 3)
+-- Єдиний UIStroke, який далі лише перефарбовується — без цього
+-- кожен виклик showNextNotif() накладав ще одну рамку поверх старої
+local notifStroke = notifFrame:FindFirstChildOfClass("UIStroke")
 
 local notifLabel = newLabel(
 	notifFrame, "",
-	UDim2.new(1, -20, 1, 0),
-	UDim2.new(0, 10, 0, 0),
+	UDim2.new(1, -20, 1, -10),
+	UDim2.new(0, 10, 0, 5),
 	Color3.fromRGB(255, 255, 255), 51
 )
+notifLabel.TextWrapped = true
 
 local function showNextNotif()
 	if #notifQueue == 0 then
@@ -98,7 +102,7 @@ local function showNextNotif()
 
 	notifLabel.Text = notif.text
 	notifLabel.TextColor3 = notif.color or Color3.fromRGB(255, 255, 255)
-	addBorder(notifFrame, notif.borderColor or Color3.fromRGB(255, 255, 255), 3)
+	notifStroke.Color = notif.borderColor or Color3.fromRGB(255, 255, 255)
 
 	notifFrame.Position = UDim2.new(0.5, -190, 0, -200)
 	local tweenIn = TweenService:Create(

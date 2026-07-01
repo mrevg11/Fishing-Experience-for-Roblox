@@ -238,6 +238,9 @@ local catchNotif = newFrame(
 catchNotif.Visible = false
 addRound(catchNotif, 16)
 addBorder(catchNotif, Color3.fromRGB(255, 215, 0), 3)
+-- Єдиний UIStroke, який далі лише перефарбовується — без цього
+-- кожен улов/помилка накладали ще одну рамку поверх старої
+local catchStroke = catchNotif:FindFirstChildOfClass("UIStroke")
 
 local catchLabel = newLabel(
 	catchNotif, "",
@@ -245,6 +248,7 @@ local catchLabel = newLabel(
 	UDim2.new(0, 5, 0, 0),
 	Color3.fromRGB(255, 255, 255), 21
 )
+catchLabel.TextWrapped = true
 
 -- ==============================
 -- SHUFFLE ZONES
@@ -341,14 +345,14 @@ end
 
 local function showCatchNotif(fish, missed)
 	if missed then
-		addBorder(catchNotif, Color3.fromRGB(200, 50, 50), 3)
+		catchStroke.Color = Color3.fromRGB(200, 50, 50)
 		catchLabel.Text = "🐟 The fish got away!"
 		catchLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 	else
 		local prefix = fish.prefix and fish.prefix .. " " or ""
 		catchLabel.Text = "✨ " .. prefix .. fish.name .. "\n[" .. fish.rarity .. "]"
 		catchLabel.TextColor3 = rarityGlow[fish.rarity] or Color3.fromRGB(255, 255, 255)
-		addBorder(catchNotif, rarityGlow[fish.rarity] or Color3.fromRGB(255, 255, 255), 3)
+		catchStroke.Color = rarityGlow[fish.rarity] or Color3.fromRGB(255, 255, 255)
 	end
 	catchNotif.Visible = true
 	task.delay(2.5, function() catchNotif.Visible = false end)
@@ -412,7 +416,7 @@ end)
 
 CatchFish.OnClientEvent:Connect(function(fish, reason)
 	if reason == "full" then
-		addBorder(catchNotif, Color3.fromRGB(200, 50, 50), 3)
+		catchStroke.Color = Color3.fromRGB(200, 50, 50)
 		catchLabel.Text = "🎒 Inventory full!"
 		catchLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 		catchNotif.Visible = true
