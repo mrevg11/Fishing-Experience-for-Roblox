@@ -203,8 +203,12 @@ end
 -- Item grid
 local itemGrid = Instance.new("ScrollingFrame")
 itemGrid.Name = "ItemGrid"
-itemGrid.Size = UDim2.new(1, -35, 1, -135)
-itemGrid.Position = UDim2.new(0, 20, 0, 130)
+-- Фіксована ширина під 4 колонки (4*130 + 3*15 = 565, +трохи для скролбару),
+-- центрована у вікні — сама група плиток по центру, а плитки всередині
+-- заповнюються зліва направо
+itemGrid.AnchorPoint = Vector2.new(0.5, 0)
+itemGrid.Size = UDim2.new(0, 575, 1, -145)
+itemGrid.Position = UDim2.new(0.5, 0, 0, 130)
 itemGrid.BackgroundTransparency = 1
 itemGrid.BorderSizePixel = 0
 itemGrid.ScrollBarThickness = 6
