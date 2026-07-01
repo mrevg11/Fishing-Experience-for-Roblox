@@ -219,6 +219,13 @@ gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 gridLayout.Parent = itemGrid
 
+-- Без цього відступу верхній/лівий рядок плиток обрізає зовнішню
+-- половину UIStroke-рамки (ScrollingFrame клипає власні межі)
+local gridPadding = Instance.new("UIPadding")
+gridPadding.PaddingTop = UDim.new(0, 4)
+gridPadding.PaddingLeft = UDim.new(0, 4)
+gridPadding.Parent = itemGrid
+
 -- ==============================
 -- INVENTORY RENDERING
 -- ==============================
