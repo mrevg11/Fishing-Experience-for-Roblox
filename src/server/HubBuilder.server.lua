@@ -1,40 +1,49 @@
 -- HubBuilder
 -- HubBuilder
--- Процедурно створює плейсхолдер-структури хабу (A1): NPC, музей,
--- льох, склад, дошки аукціону/квестів, причал. Це тимчасові частини —
--- заміняться на фінальний 3D-арт друга пізніше.
+-- Процедурно створює особистий острів кожного гравця (A1): NPC, магазин,
+-- музей, льох, склад, дошки аукціону/квестів. Кожен з 8 гравців отримує
+-- окрему копію на власному слоті в ряду островів (WorldBuilder будує
+-- спільний місток/причал/океан за ними). Тимчасові частини — заміняться
+-- на фінальний 3D-арт друга пізніше.
 
+local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local DataManager = require(ServerScriptService.DataManager)
 local EconomyUtils = require(ServerScriptService.EconomyUtils)
+local WorldConfig = require(ServerScriptService.WorldConfig)
 
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local UpdateInventory = RemoteEvents:WaitForChild("UpdateInventory")
 local ShowNotification = RemoteEvents:WaitForChild("ShowNotification")
 
--- Точка відліку для розстановки хабу (тимчасово — поки немає готового хабу в Studio)
-local HUB_ORIGIN = Vector3.new(0, 1, 60)
-
 local hubFolder = Instance.new("Folder")
 hubFolder.Name = "Hub"
 hubFolder.Parent = Workspace
+
+-- Слот (1..MAX_SLOTS) <-> гравець, зайнятий слот = острів гравця в ряду
+local playerBySlot = {}
+local slotByPlayer = {}
 
 -- ==============================
 -- HELPERS
 -- ==============================
 
-local function createHubPoint(name, offset, color, actionText)
+local function notify(player, text, color, borderColor)
+	ShowNotification:FireClient(player, text, color, borderColor)
+end
+
+local function createHubPoint(parentFolder, name, origin, offset, color, actionText)
 	local part = Instance.new("Part")
 	part.Name = name
 	part.Size = Vector3.new(8, 1, 8)
-	part.Position = HUB_ORIGIN + offset
+	part.Position = origin + offset
 	part.Anchored = true
 	part.Color = color
 	part.Material = Enum.Material.SmoothPlastic
-	part.Parent = hubFolder
+	part.Parent = parentFolder
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size = UDim2.new(0, 160, 0, 40)
@@ -67,33 +76,16 @@ local function createHubPoint(name, offset, color, actionText)
 	return part, prompt
 end
 
-local function notify(player, text, color, borderColor)
-	ShowNotification:FireClient(player, text, color, borderColor)
+local function buildIslandPlatform(parentFolder, origin)
+	local platform = Instance.new("Part")
+	platform.Name = "Platform"
+	platform.Size = Vector3.new(WorldConfig.ISLAND_WIDTH, 1, WorldConfig.ISLAND_DEPTH)
+	platform.Position = origin + Vector3.new(WorldConfig.CENTER_X, -1, 0)
+	platform.Anchored = true
+	platform.Color = Color3.fromRGB(210, 180, 120)
+	platform.Material = Enum.Material.Sand
+	platform.Parent = parentFolder
 end
-
--- ==============================
--- NPC ТЬЮТОРІАЛ
--- ==============================
-
-local _, tutorialPrompt = createHubPoint(
-	"Tutorial NPC", Vector3.new(-280, 0, 0),
-	Color3.fromRGB(150, 150, 150), "Talk"
-)
-
-tutorialPrompt.Triggered:Connect(function(player)
-	notify(player,
-		"🎣 Welcome! Cast your rod to catch fish, sell them at the shop, and upgrade your gear.",
-		Color3.fromRGB(100, 220, 255), Color3.fromRGB(0, 180, 255))
-end)
-
--- ==============================
--- NPC МАГАЗИН — робочий продаж усієї риби
--- ==============================
-
-local _, shopPrompt = createHubPoint(
-	"Shop", Vector3.new(-200, 0, 0),
-	Color3.fromRGB(60, 180, 60), "Sell All Fish"
-)
 
 local function sellAllFish(player)
 	local data = DataManager.getData(player)
@@ -117,38 +109,111 @@ local function sellAllFish(player)
 		Color3.fromRGB(255, 215, 0), Color3.fromRGB(200, 150, 0))
 end
 
-shopPrompt.Triggered:Connect(sellAllFish)
-
 -- ==============================
--- МУЗЕЙ — сама точка тут, UI-логіку відкриття веде MuseumController
--- (клієнт сам слухає ProximityPrompt.Triggered на цій точці)
+-- ОСТРІВ ГРАВЦЯ
 -- ==============================
 
-createHubPoint("Museum", Vector3.new(-120, 0, 0), Color3.fromRGB(60, 110, 220), "Open Museum")
-
--- ==============================
--- НЕГОТОВІ СИСТЕМИ — плейсхолдери з "Coming soon"
--- ==============================
-
-local comingSoonPoints = {
-	{ name = "Ice Vault",     offset = Vector3.new(-40, 0, 0),  color = Color3.fromRGB(120, 200, 220) },
-	{ name = "Warehouse",     offset = Vector3.new(40, 0, 0),   color = Color3.fromRGB(150, 110, 70) },
-	{ name = "Auction Board", offset = Vector3.new(120, 0, 0),  color = Color3.fromRGB(150, 60, 200) },
-	{ name = "Quest Board",   offset = Vector3.new(200, 0, 0),  color = Color3.fromRGB(220, 140, 40) },
-}
-
-for _, point in ipairs(comingSoonPoints) do
-	local _, prompt = createHubPoint(point.name, point.offset, point.color, "Interact")
-	prompt.Triggered:Connect(function(player)
-		notify(player, "🚧 " .. point.name .. " is coming soon!",
-			Color3.fromRGB(220, 220, 220), Color3.fromRGB(150, 150, 150))
-	end)
+local function findFreeSlot()
+	for slot = 1, WorldConfig.MAX_SLOTS do
+		if not playerBySlot[slot] then
+			return slot
+		end
+	end
+	return nil
 end
 
--- ==============================
--- ПРИЧАЛ — просто орієнтир, вихід в океан ще не реалізований
--- ==============================
+local function spawnPointFor(origin)
+	return origin + Vector3.new(WorldConfig.CENTER_X, 4, -70)
+end
 
-createHubPoint("Pier", Vector3.new(280, 0, 0), Color3.fromRGB(160, 120, 80), nil)
+local function buildIslandFor(player, slot)
+	local origin = WorldConfig.islandOrigin(slot)
 
-print("[HubBuilder] Хаб згенеровано успішно!")
+	local islandFolder = Instance.new("Folder")
+	islandFolder.Name = "Player_" .. player.UserId
+	islandFolder.Parent = hubFolder
+
+	buildIslandPlatform(islandFolder, origin)
+
+	local _, tutorialPrompt = createHubPoint(
+		islandFolder, "Tutorial NPC", origin, Vector3.new(-280, 0, 0),
+		Color3.fromRGB(150, 150, 150), "Talk"
+	)
+	tutorialPrompt.Triggered:Connect(function(triggeringPlayer)
+		notify(triggeringPlayer,
+			"🎣 Welcome! Cast your rod to catch fish, sell them at the shop, and upgrade your gear.",
+			Color3.fromRGB(100, 220, 255), Color3.fromRGB(0, 180, 255))
+	end)
+
+	local _, shopPrompt = createHubPoint(
+		islandFolder, "Shop", origin, Vector3.new(-200, 0, 0),
+		Color3.fromRGB(60, 180, 60), "Sell All Fish"
+	)
+	shopPrompt.Triggered:Connect(sellAllFish)
+
+	-- Музей — сама точка тут, UI-логіку відкриття веде MuseumController
+	-- (клієнт сам слухає ProximityPrompt.Triggered на своєму власному острові)
+	createHubPoint(islandFolder, "Museum", origin, Vector3.new(-120, 0, 0), Color3.fromRGB(60, 110, 220), "Open Museum")
+
+	local comingSoonPoints = {
+		{ name = "Ice Vault",     offset = Vector3.new(-40, 0, 0), color = Color3.fromRGB(120, 200, 220) },
+		{ name = "Warehouse",     offset = Vector3.new(40, 0, 0),  color = Color3.fromRGB(150, 110, 70) },
+		{ name = "Auction Board", offset = Vector3.new(120, 0, 0), color = Color3.fromRGB(150, 60, 200) },
+		{ name = "Quest Board",   offset = Vector3.new(200, 0, 0), color = Color3.fromRGB(220, 140, 40) },
+	}
+	for _, point in ipairs(comingSoonPoints) do
+		local _, prompt = createHubPoint(islandFolder, point.name, origin, point.offset, point.color, "Interact")
+		prompt.Triggered:Connect(function(triggeringPlayer)
+			notify(triggeringPlayer, "🚧 " .. point.name .. " is coming soon!",
+				Color3.fromRGB(220, 220, 220), Color3.fromRGB(150, 150, 150))
+		end)
+	end
+
+	return islandFolder, origin
+end
+
+local function teleportToIsland(player, origin)
+	local character = player.Character
+	if not character then return end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	hrp.CFrame = CFrame.new(spawnPointFor(origin))
+end
+
+Players.PlayerAdded:Connect(function(player)
+	local slot = findFreeSlot()
+	if not slot then
+		notify(player, "⚠️ The hub is full right now, try rejoining shortly.",
+			Color3.fromRGB(255, 100, 100), Color3.fromRGB(200, 50, 50))
+		return
+	end
+
+	playerBySlot[slot] = player
+	slotByPlayer[player] = slot
+
+	local _, origin = buildIslandFor(player, slot)
+
+	player.CharacterAdded:Connect(function()
+		task.wait(0.1)
+		teleportToIsland(player, origin)
+	end)
+
+	if player.Character then
+		teleportToIsland(player, origin)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	local slot = slotByPlayer[player]
+	if not slot then return end
+
+	local islandFolder = hubFolder:FindFirstChild("Player_" .. player.UserId)
+	if islandFolder then
+		islandFolder:Destroy()
+	end
+
+	playerBySlot[slot] = nil
+	slotByPlayer[player] = nil
+end)
+
+print("[HubBuilder] Готовий видавати особисті острови гравцям!")

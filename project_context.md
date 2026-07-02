@@ -20,11 +20,13 @@ D:\FishingExperience\
 │   │   ├── DataManager.lua          (ModuleScript)
 │   │   ├── FishData.lua             (ModuleScript — спільна таблиця риби)
 │   │   ├── EconomyUtils.lua         (ModuleScript — ціна/монети, спільно для EconomySystem і HubBuilder)
+│   │   ├── WorldConfig.lua          (ModuleScript — спільна геометрія: острови/місток/причал/океан/зони)
 │   │   ├── GameManager.server.lua   (Script)
 │   │   ├── FishingSystem.server.lua (Script)
 │   │   ├── EconomySystem.server.lua (Script)
 │   │   ├── MuseumSystem.server.lua  (Script — донат риби, ліміти, офлайн-дохід)
-│   │   └── HubBuilder.server.lua    (Script — процедурна генерація хабу)
+│   │   ├── HubBuilder.server.lua    (Script — особистий острів кожного гравця)
+│   │   └── WorldBuilder.server.lua  (Script — спільний місток/причал/океан/зони)
 │   └── client/
 │       ├── ClientManager.client.lua        (LocalScript — порожній, тільки ініціалізація)
 │       ├── HudController.client.lua        (LocalScript)
@@ -56,6 +58,9 @@ D:\FishingExperience\
       "EconomyUtils": {
         "$path": "src/server/EconomyUtils.lua"
       },
+      "WorldConfig": {
+        "$path": "src/server/WorldConfig.lua"
+      },
       "GameManager": {
         "$path": "src/server/GameManager.server.lua"
       },
@@ -70,6 +75,9 @@ D:\FishingExperience\
       },
       "HubBuilder": {
         "$path": "src/server/HubBuilder.server.lua"
+      },
+      "WorldBuilder": {
+        "$path": "src/server/WorldBuilder.server.lua"
       }
     },
     "StarterGui": {
@@ -209,18 +217,51 @@ D:\FishingExperience\
 - RequestMuseum.OnServerEvent → надсилає data.museum при відкритті вікна
 - Публічний доступ до цін через EconomyUtils.calculatePrice/addCoins
 
+#### WorldConfig.lua (ModuleScript)
+- Спільні геометричні константи ландшафту (HUB_ORIGIN, MAX_SLOTS=8,
+  ISLAND_SPACING=500 studs по Z, розмір острова, зсув причалу/океану/
+  зон) + функції islandOrigin(slot), pierZ(), oceanStartZ(),
+  zone1CenterZ(), zone2CenterZ() — щоб HubBuilder і WorldBuilder
+  рахували ту саму систему координат і не розсинхронізувались
+
 #### HubBuilder.server.lua (Script)
-- Процедурно розставляє на HUB_ORIGIN = (0,1,60) плейсхолдер-частини
-  з BillboardGui-підписом і ProximityPrompt: Tutorial NPC, Shop,
-  Museum, Ice Vault, Warehouse, Auction Board, Quest Board, Pier
+- РІШЕННЯ (2026-07-02): хаб — це ОСОБИСТИЙ острів кожного гравця
+  ("Острів гравця" за документом), а не один спільний на весь сервер.
+  На Players.PlayerAdded гравцю виділяється вільний слот (1-8, за
+  WorldConfig.MAX_SLOTS), будується копія острова на
+  WorldConfig.islandOrigin(slot) під Workspace.Hub.Player_<UserId>,
+  гравця телепортує туди при кожному спавні/респавні
+  (player.CharacterAdded). На PlayerRemoving острів знищується і
+  слот звільняється для наступного гравця
+- Кожен острів має плейсхолдер-частини з BillboardGui-підписом і
+  ProximityPrompt: Tutorial NPC, Shop, Museum, Ice Vault, Warehouse,
+  Auction Board, Quest Board (Pier тепер СПІЛЬНИЙ — див. WorldBuilder,
+  не дублюється на кожному острові)
 - Shop РЕАЛЬНО ПРАЦЮЄ — "Sell All Fish" продає весь рюкзак риби
   через EconomyUtils, показує тост із сумою
 - Museum РЕАЛЬНО ПРАЦЮЄ — точку відкриває MuseumController на клієнті
-  (слухає той самий ProximityPrompt.Triggered), сама логіка в MuseumSystem
+  (слухає ProximityPrompt.Triggered на СВОЄМУ острові, тепер шукає
+  Workspace.Hub.Player_<player.UserId>.Museum, а не єдину спільну точку)
 - Решта точок (Ice Vault/Warehouse/Auction/Quest) показують
   "Coming soon!" — самі системи ще не реалізовані
-- Pier — лише орієнтир без ProximityPrompt (вихід в океан не готовий)
 - Це тимчасові Part-плейсхолдери, друг замінить на фінальний 3D-арт
+
+#### WorldBuilder.server.lua (Script)
+- РІШЕННЯ (2026-07-02): будує СПІЛЬНІ (не персональні) елементи
+  ландшафту один раз при старті сервера, за WorldConfig:
+  - Місток (Walkway) — з'єднує всі 8 слотів островів у рядок уздовж Z
+  - Спільний Причал (Pier) — один на всіх, в кінці рядка островів;
+    підпис "party boats coming soon", поки без ProximityPrompt
+    (переміщення човном/плотом ще не реалізоване)
+  - Океан (Ocean) — напівпрозора синя площина за причалом
+  - Зона 1 (Мілководдя, безкоштовна) і Зона 2 (Рифи, 15 000 монет/тиждень) —
+    по острівцю ресурсів (плейсхолдер, без логіки збору) + по 3
+    FishingSpot-маркери (прозорі неонові циліндри радіусом 80 studs,
+    з атрибутами Zone/SpotIndex — поки тільки візуальні, гри-логіка
+    визначення зони/споту при закиданні ще не підключена, див. відому
+    діру безпеки в FishingController/CastRod)
+- Усе процедурне через Instance.new — тимчасовий плейсхолдер до
+  готового 3D-арту від друга
 
 ### Клієнтські контролери
 
@@ -306,8 +347,9 @@ D:\FishingExperience\
   на вид, incomeRate на кожен конкретний екземпляр), формула не дублюється на клієнті
 - Дублює зону/рідкість риби локально (speciesTemplate) — клієнт не
   має доступу до FishData (лежить у ServerScriptService)
-- Відкривається через той самий ProximityPrompt, що створив
-  HubBuilder на точці "Museum" (клієнт підписується напряму на нього)
+- Відкривається через ProximityPrompt на точці "Museum" ВЛАСНОГО
+  острова гравця (Workspace.Hub.Player_<player.UserId>.Museum —
+  оновлено після переходу HubBuilder на персональні острови)
 - RequestMuseum:FireServer() при відкритті, підписка на UpdateMuseum
 - Лише перегляд — донат риби робиться кнопкою "🏛️" у BackpackController
 - Хвиля 1: особистий UI. Вітрина з живою рибою — Хвиля 2-3 (див. "не реалізовано")
@@ -453,12 +495,18 @@ rojo serve
 - [ ] Збереження позиції човна
 - [ ] Roblox Friends API для бонусу музею
 - [ ] Верстак (заблоковано до Хвилі 2)
-- [x] Плейсхолдер-структура хабу (HubBuilder.server.lua — Part'и з
-      BillboardGui+ProximityPrompt на HUB_ORIGIN=(0,1,60), не фінальний арт)
-- [ ] Острови і NPC-торговці ресурсів
-- [ ] Човен і переміщення
-- [ ] FishingSpot зони в океані (зона в CastRod поки завжди=1, inFishingSpot=false,
-      і взагалі не перевіряється сервером — див. увагу в FishingController вище)
+- [x] Плейсхолдер-структура хабу (HubBuilder.server.lua — персональний
+      острів на кожного з 8 гравців, Part'и з BillboardGui+ProximityPrompt,
+      не фінальний арт)
+- [x] Плейсхолдер-ландшафт (WorldBuilder.server.lua — місток між
+      островами, спільний причал, океан, Зона 1/Зона 2 з ресурс-острівцями
+      і візуальними FishingSpot-маркерами; не фінальний арт)
+- [ ] Острови-ресурси — сама логіка збору ресурсів (візуальні острівці вже є)
+- [ ] Човен і переміщення (Причал — поки лише орієнтир, без ProximityPrompt)
+- [ ] FishingSpot зони в океані — маркери вже стоять у WorldBuilder з
+      атрибутами Zone/SpotIndex, але зона в CastRod усе ще завжди=1,
+      inFishingSpot=false, і сервер НЕ перевіряє реальну позицію гравця
+      відносно маркерів (див. відому увагу в FishingController вище)
 - [ ] RemoteEvents OpenInventory/ListAuction створені, але без обробників (AddToMuseum вже має обробник у MuseumSystem)
 
 ---
@@ -499,3 +547,9 @@ rojo serve
 12. +100% бонус колекції музею вимагає ПОВНОЇ колекції ВСЬОГО музею
     (обидві зони на максимумі кожного виду), а не однієї зони —
     документ E2/D3 оновлено з "колекція зони" на "колекція музею"
+13. Хаб — ОСОБИСТИЙ острів кожного з 8 гравців (за документом,
+    "Острів гравця"), не спільна структура на весь сервер. Острови
+    вишикувані в один ряд, з'єднані спільним містком, що веде до
+    ОДНОГО спільного Причалу — свідомо, з розрахунком на майбутню
+    паті-корабельну систему (гравці відпливають разом з одного
+    причалу, а не кожен зі свого острова)

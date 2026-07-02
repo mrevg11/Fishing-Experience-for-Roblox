@@ -13,6 +13,9 @@
       "EconomyUtils": {
         "$path": "src/server/EconomyUtils.lua"
       },
+      "WorldConfig": {
+        "$path": "src/server/WorldConfig.lua"
+      },
       "GameManager": {
         "$path": "src/server/GameManager.server.lua"
       },
@@ -27,6 +30,9 @@
       },
       "HubBuilder": {
         "$path": "src/server/HubBuilder.server.lua"
+      },
+      "WorldBuilder": {
+        "$path": "src/server/WorldBuilder.server.lua"
       }
     },
     "StarterGui": {

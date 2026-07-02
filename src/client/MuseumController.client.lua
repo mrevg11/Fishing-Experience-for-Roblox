@@ -334,10 +334,13 @@ UpdateMuseum.OnClientEvent:Connect(function(museum)
 	end
 end)
 
--- Слухаємо той самий ProximityPrompt, що створив HubBuilder на сервері
+-- Слухаємо той самий ProximityPrompt, що створив HubBuilder на сервері —
+-- тепер на ОСОБИСТОМУ острові гравця (Hub.Player_<UserId>), а не на
+-- єдиному спільному хабі
 task.spawn(function()
 	local hub = Workspace:WaitForChild("Hub")
-	local museumPart = hub:WaitForChild("Museum")
+	local islandFolder = hub:WaitForChild("Player_" .. player.UserId)
+	local museumPart = islandFolder:WaitForChild("Museum")
 	local prompt = museumPart:WaitForChild("ProximityPrompt")
 
 	prompt.Triggered:Connect(function(triggeringPlayer)
