@@ -75,9 +75,28 @@ local function findFishInInventory(inventory, fishName, prefix)
 	return nil, nil
 end
 
--- E2: +30% якщо в музеї є хоча б 1 екземпляр кожного виду зони,
--- +100% (замінює +30%) якщо кожен вид зони зібраний по максимуму
-local function getCollectionBonus(zone, museumFish)
+-- РІШЕННЯ: +100% вимагає повної колекції ВСЬОГО музею (обидві зони на
+-- максимумі кожного виду), а не тільки однієї зони — документ E2/D3 оновлено
+local function isMuseumFullyMaxed(museumFish)
+	local countByName = {}
+	for _, specimen in ipairs(museumFish) do
+		countByName[specimen.name] = (countByName[specimen.name] or 0) + 1
+	end
+
+	for name, info in pairs(FishData) do
+		local cap = rarityCaps[info.rarity] or 1
+		if (countByName[name] or 0) < cap then
+			return false
+		end
+	end
+	return true
+end
+
+-- E2: +30% якщо в музеї є хоча б 1 екземпляр кожного виду ЦІЄЇ зони,
+-- +100% (замінює +30% в ОБОХ зонах) якщо весь музей зібраний по максимуму
+local function getCollectionBonus(zone, museumFish, museumFullyMaxed)
+	if museumFullyMaxed then return 1.0 end
+
 	local species = zoneSpecies[zone]
 	if not species or #species == 0 then return 0 end
 
@@ -86,18 +105,10 @@ local function getCollectionBonus(zone, museumFish)
 		countByName[specimen.name] = (countByName[specimen.name] or 0) + 1
 	end
 
-	local allPresent = true
-	local allMaxed = true
 	for _, name in ipairs(species) do
-		local count = countByName[name] or 0
-		if count == 0 then allPresent = false end
-		local cap = rarityCaps[FishData[name].rarity] or 1
-		if count < cap then allMaxed = false end
+		if (countByName[name] or 0) == 0 then return 0 end
 	end
-
-	if allMaxed then return 1.0 end
-	if allPresent then return 0.3 end
-	return 0
+	return 0.3
 end
 
 local function getIncomeRate(specimen, collectionBonus)
@@ -112,10 +123,11 @@ end
 local function buildMuseumPayload(data)
 	ensureMuseumShape(data)
 	local museumFish = data.museum.fish
+	local museumFullyMaxed = isMuseumFullyMaxed(museumFish)
 
 	local zoneBonus = {
-		[1] = getCollectionBonus(1, museumFish),
-		[2] = getCollectionBonus(2, museumFish),
+		[1] = getCollectionBonus(1, museumFish, museumFullyMaxed),
+		[2] = getCollectionBonus(2, museumFish, museumFullyMaxed),
 	}
 
 	local incomeBySpecies = {}
@@ -148,9 +160,10 @@ local function payIncomeForMinutes(player, data, minutesElapsed)
 	local museumFish = data.museum.fish
 	if #museumFish == 0 or minutesElapsed <= 0 then return 0 end
 
+	local museumFullyMaxed = isMuseumFullyMaxed(museumFish)
 	local zoneBonus = {
-		[1] = getCollectionBonus(1, museumFish),
-		[2] = getCollectionBonus(2, museumFish),
+		[1] = getCollectionBonus(1, museumFish, museumFullyMaxed),
+		[2] = getCollectionBonus(2, museumFish, museumFullyMaxed),
 	}
 
 	local total = 0
