@@ -130,19 +130,31 @@ local function buildMuseumPayload(data)
 		[2] = getCollectionBonus(2, museumFish, museumFullyMaxed),
 	}
 
+	-- Копія списку "для показу" з indivudual incomeRate — оригінал
+	-- (data.museum.fish) лишаємо чистим, щоб не тягнути похідні поля
+	-- в DataStore
 	local incomeBySpecies = {}
 	local totalIncomePerMinute = 0
+	local fishForDisplay = {}
 	for _, specimen in ipairs(museumFish) do
 		local fishInfo = FishData[specimen.name]
+		local rate = 0
 		if fishInfo then
-			local rate = getIncomeRate(specimen, zoneBonus[fishInfo.zone] or 0)
+			rate = getIncomeRate(specimen, zoneBonus[fishInfo.zone] or 0)
 			incomeBySpecies[specimen.name] = (incomeBySpecies[specimen.name] or 0) + rate
 			totalIncomePerMinute = totalIncomePerMinute + rate
 		end
+		table.insert(fishForDisplay, {
+			name = specimen.name,
+			prefix = specimen.prefix,
+			prefixBonus = specimen.prefixBonus,
+			rarity = specimen.rarity,
+			incomeRate = rate,
+		})
 	end
 
 	return {
-		fish = museumFish,
+		fish = fishForDisplay,
 		incomeBySpecies = incomeBySpecies,
 		totalIncomePerMinute = totalIncomePerMinute,
 	}

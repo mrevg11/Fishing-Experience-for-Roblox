@@ -213,6 +213,9 @@ listLayout.Parent = list
 
 local currentMuseum = { fish = {}, incomeBySpecies = {}, totalIncomePerMinute = 0 }
 
+-- Які види зараз розгорнуті (показують конкретні екземпляри)
+local expandedSpecies = {}
+
 local function clearList()
 	for _, child in ipairs(list:GetChildren()) do
 		if not child:IsA("UIListLayout") then
@@ -224,9 +227,10 @@ end
 local function renderMuseum()
 	clearList()
 
-	local countByName = {}
+	local specimensByName = {}
 	for _, specimen in ipairs(currentMuseum.fish or {}) do
-		countByName[specimen.name] = (countByName[specimen.name] or 0) + 1
+		specimensByName[specimen.name] = specimensByName[specimen.name] or {}
+		table.insert(specimensByName[specimen.name], specimen)
 	end
 	local incomeBySpecies = currentMuseum.incomeBySpecies or {}
 
@@ -248,9 +252,11 @@ local function renderMuseum()
 		for _, species in ipairs(sortedSpecies) do
 			if species.zone == zone then
 				order = order + 1
-				local count = countByName[species.name] or 0
+				local specimens = specimensByName[species.name] or {}
+				local count = #specimens
 				local cap = rarityCaps[species.rarity] or 1
 				local income = incomeBySpecies[species.name] or 0
+				local isExpanded = expandedSpecies[species.name]
 
 				local row = newFrame(
 					list, UDim2.new(1, 0, 0, 34), UDim2.new(0, 0, 0, 0),
@@ -259,8 +265,21 @@ local function renderMuseum()
 				row.LayoutOrder = order
 				addRound(row, 8)
 
+				local arrowBtn = newButton(
+					row, count > 0 and (isExpanded and "▼" or "▶") or "•",
+					UDim2.new(0, 24, 0, 24), UDim2.new(0, 5, 0, 5),
+					Color3.fromRGB(40, 40, 40), 33
+				)
+				arrowBtn.Active = count > 0
+				if count > 0 then
+					arrowBtn.MouseButton1Click:Connect(function()
+						expandedSpecies[species.name] = not expandedSpecies[species.name]
+						renderMuseum()
+					end)
+				end
+
 				newLabel(row, species.name,
-					UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 10, 0, 0),
+					UDim2.new(0.5, -34, 1, 0), UDim2.new(0, 34, 0, 0),
 					Color3.fromRGB(255, 255, 255), 33)
 
 				newLabel(row, count .. " / " .. cap,
@@ -270,6 +289,26 @@ local function renderMuseum()
 				newLabel(row, count > 0 and string.format("+%.1f/min", income) or "—",
 					UDim2.new(0.3, -10, 1, 0), UDim2.new(0.7, 0, 0, 0),
 					Color3.fromRGB(150, 255, 150), 33)
+
+				if isExpanded then
+					for _, specimen in ipairs(specimens) do
+						order = order + 1
+						local subRow = newFrame(
+							list, UDim2.new(1, -30, 0, 26), UDim2.new(0, 30, 0, 0),
+							Color3.fromRGB(20, 20, 20), 0.2, 32
+						)
+						subRow.LayoutOrder = order
+						addRound(subRow, 6)
+
+						newLabel(subRow, specimen.prefix and ("✨ " .. specimen.prefix) or "No prefix",
+							UDim2.new(0.6, 0, 1, 0), UDim2.new(0, 10, 0, 0),
+							specimen.prefix and Color3.fromRGB(255, 230, 50) or Color3.fromRGB(160, 160, 160), 33)
+
+						newLabel(subRow, string.format("+%.1f/min", specimen.incomeRate or 0),
+							UDim2.new(0.4, -10, 1, 0), UDim2.new(0.6, 0, 0, 0),
+							Color3.fromRGB(150, 255, 150), 33)
+					end
+				end
 			end
 		end
 	end
