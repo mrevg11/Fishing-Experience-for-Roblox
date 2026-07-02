@@ -190,7 +190,9 @@ D:\FishingExperience\
 - Ліміти екземплярів по рідкості (D3): Common 6, Uncommon 5, Rare 4, Epic 3, Legendary 2
 - Якщо вид уже заповнений — заміна найслабшого екземпляра (за prefixBonus),
   якщо новий кращий; інакше донат відхиляється. Стара риба НЕ повертається в рюкзак
-- UpdateMuseum передає не лише сирий список екземплярів, а й
+- UpdateMuseum передає копію списку екземплярів (name/prefix/prefixBonus/
+  rarity/incomeRate — incomeRate рахується щоразу наново, НЕ пишеться в
+  data.museum.fish, щоб не тягнути похідні поля в DataStore), а також
   incomeBySpecies (дохід/хв на вид) і totalIncomePerMinute — для показу
   в MuseumController без дублювання формули на клієнті
 - Офлайн пасивний дохід (F3) — одноразовий лямп-сум при вході з тостом:
@@ -295,10 +297,13 @@ D:\FishingExperience\
 
 #### MuseumController.client.lua (LocalScript)
 - Вікно перегляду колекції (650x550, по центру), список видів
-  згрупований по зонах, кожен рядок "Назва   count/cap   +X.X/min"
+  згрупований по зонах, кожен рядок "▶ Назва   count/cap   +X.X/min"
+- Рядок виду розгортається стрілочкою (▶/▼) — показує підрядки з
+  конкретними екземплярами (префікс + індивідуальний дохід/хв кожного),
+  щоб гравець бачив, чи новий улов реально кращий за те, що вже в музеї
 - Підсумковий рядок під шапкою: "💰 Passive income: X.X coins/min"
-- Дохід береться з UpdateMuseum-пейлоаду (incomeBySpecies/totalIncomePerMinute),
-  формула не дублюється на клієнті
+- Дохід береться з UpdateMuseum-пейлоаду (incomeBySpecies/totalIncomePerMinute
+  на вид, incomeRate на кожен конкретний екземпляр), формула не дублюється на клієнті
 - Дублює зону/рідкість риби локально (speciesTemplate) — клієнт не
   має доступу до FishData (лежить у ServerScriptService)
 - Відкривається через той самий ProximityPrompt, що створив
